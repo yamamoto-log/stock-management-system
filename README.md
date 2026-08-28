@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ```markdown
 # 拠点別在庫管理システム (Multi-Location Inventory Management System)
 
@@ -151,3 +152,6 @@ sudo chmod 644 /var/www/html/*.php
 ```
 
 ```
+=======
+# stock-management-system
+>>>>>>> 2a6ab3c81e57333c27542e3f53a063053f06bf5c
