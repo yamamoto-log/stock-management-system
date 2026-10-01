@@ -18,7 +18,7 @@ if (file_exists(__DIR__ . '/.env')) {
 $db_host = $_ENV['DB_HOST'] ?? '127.0.0.1';
 $db_name = $_ENV['DB_NAME'] ?? 'stock_db';
 $db_user = $_ENV['DB_USER'] ?? 'stock_user';
-$db_pass = $_ENV['DB_PASS'] ?? 'narait';
+$db_pass = $_ENV['DB_PASS'] ?? '';
 
 try {
     $pdo = new PDO("mysql:host={$db_host};dbname={$db_name};charset=utf8", $db_user, $db_pass);

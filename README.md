@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-
-````markdown
 # 拠点別在庫管理システム (Multi-Location Inventory Management System)
 
 複数拠点（店舗・倉庫等）における商品在庫の一元管理および入出庫履歴（ログ）の追跡を行えるWebアプリケーションです。
@@ -62,7 +59,6 @@
                                   - quantity
                                   - created_at
 ```
-````
 
 ### テーブル定義 (DDL)
 
@@ -139,7 +135,6 @@ CREATE TABLE inventory_logs (
 
 ```bash
 sudo chmod 644 /var/www/html/*.php
-
 ```
 
 4. **DB接続情報の変更**
@@ -150,12 +145,3 @@ sudo chmod 644 /var/www/html/*.php
 
 - ブラウザで `http://localhost/location.php` へアクセスし、拠点・商品の登録および入出庫の実行を行います。
 
-```
-
-```
-
-=======
-
-# stock-management-system
-
-> > > > > > > 2a6ab3c81e57333c27542e3f53a063053f06bf5c
