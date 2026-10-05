@@ -15,13 +15,13 @@ if (file_exists(__DIR__ . '/.env')) {
 }
 
 // デフォルトのホスト名は WSL 環境対策として 127.0.0.1 にしておくと確実です
-$db_host = $_ENV['DB_HOST'] ?? '127.0.0.1';
+$db_host = $_ENV['DB_HOST'] ?? 'localhost';
 $db_name = $_ENV['DB_NAME'] ?? 'stock_db';
-$db_user = $_ENV['DB_USER'] ?? 'stock_user';
+$db_user = $_ENV['DB_USER'] ?? 'root';
 $db_pass = $_ENV['DB_PASS'] ?? '';
 
 try {
-    $pdo = new PDO("mysql:host={$db_host};dbname={$db_name};charset=utf8", $db_user, $db_pass);
+    $pdo = new PDO("mysql:host={$db_host};dbname={$db_name};charset=utf8mb4", $db_user, $db_pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     // 接続確認テスト用（接続成功したらこの行は消してOKです）
     // echo "接続成功！"; 
