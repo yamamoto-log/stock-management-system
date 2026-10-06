@@ -1,17 +1,18 @@
 <?php
-
-require_once __DIR__ .'/db.php';
+require_once __DIR__ . '/../src/db.php';
+require_once __DIR__ . '/../src/functions.php';
 
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['product_name'])) {
     $name = $_POST['product_name'];
-    $stmt = $pdo->prepare("INSERT INTO products (name) VALUES (:name)");
+    $stmt = $dbh->prepare("INSERT INTO products (name) VALUES (:name)");
     $stmt->bindValue(':name', $name, PDO::PARAM_STR);
     $stmt->execute();
     $message = '商品「' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '」を登録しました！';
 }
 
-$stmt = $pdo->query("SELECT * FROM products ORDER BY id DESC");
+$sql = 'SELECT * FROM products ORDER BY id DESC';
+$stmt = $dbh->query($sql);
 $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
@@ -37,7 +38,7 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <h2>登録済み商品一覧</h2>
     <ul>
         <?php foreach ($products as $product): ?>
-            <li>ID: <?php echo $product['id']; ?> - <?php echo htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8'); ?></li>
+            <li>ID: <?php echo $product['id']; ?> - <?php echo str2html($product['name']); ?></li>
         <?php endforeach; ?>
     </ul>
     <p><a href="location.php">拠点登録へ</a> | <a href="inventory.php">在庫管理へ</a></p>

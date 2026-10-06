@@ -1,6 +1,8 @@
 <?php
 
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/../src/db.php';
+require_once __DIR__ . '/../src/functions.php';
+
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $message = '';
@@ -8,7 +10,7 @@ $message = '';
 // 更新処理 (UPDATE)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['location_name'])) {
     $name = $_POST['location_name'];
-    $stmt = $pdo->prepare("UPDATE locations SET name = :name WHERE id = :id");
+    $stmt = $dbh->prepare("UPDATE locations SET name = :name WHERE id = :id");
     $stmt->bindValue(':name', $name, PDO::PARAM_STR);
     $stmt->bindValue(':id', $id, PDO::PARAM_INT);
     $stmt->execute();
@@ -19,7 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['location_name'])) {
 }
 
 // 該当データの取得
-$stmt = $pdo->prepare("SELECT * FROM locations WHERE id = :id");
+$sql = 'SELECT * FROM locations WHERE id = :id';
+$stmt = $dbh->prepare($sql);
 $stmt->bindValue(':id', $id, PDO::PARAM_INT);
 $stmt->execute();
 $location = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -39,7 +42,7 @@ if (!$location) {
     <h1>拠点名の編集</h1>
     <form action="" method="POST">
         <label for="location_name">拠点名：</label>
-        <input type="text" id="location_name" name="location_name" value="<?php echo htmlspecialchars($location['name'], ENT_QUOTES, 'UTF-8'); ?>" required>
+        <input type="text" id="location_name" name="location_name" value="<?php echo str2html($location['name']); ?>" required>
         <button type="submit">更新する</button>
     </form>
     <p><a href="location.php">戻る</a></p>
