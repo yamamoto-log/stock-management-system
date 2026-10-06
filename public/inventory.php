@@ -2,7 +2,9 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/../src/db.php';
+require_once __DIR__ . '/../src/functions.php';
+
 
 $message = '';
 $error = '';
@@ -17,7 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = '数量は1以上を指定してください。';
     } else {
         // 既存の在庫データを検索
-        $stmt = $pdo->prepare("SELECT * FROM location_inventories WHERE location_id = :location_id AND product_id = :product_id");
+        $sql = 'SELECT * FROM location_inventories WHERE location_id = :location_id AND product_id = :product_id';
+        $stmt = $dbh->prepare($sql);
         $stmt->bindValue(':location_id', $location_id, PDO::PARAM_INT);
         $stmt->bindValue(':product_id', $product_id, PDO::PARAM_INT);
         $stmt->execute();
@@ -28,12 +31,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($type === 'in') {
             // 【入庫処理】
             if ($inventory) {
-                $stmt = $pdo->prepare("UPDATE location_inventories SET quantity = quantity + :quantity WHERE id = :id");
+                $sql = 'UPDATE location_inventories SET quantity = quantity + :quantity WHERE id = :id';
+                $stmt = $dbh->prepare($sql);
                 $stmt->bindValue(':quantity', $quantity, PDO::PARAM_INT);
                 $stmt->bindValue(':id', $inventory['id'], PDO::PARAM_INT);
                 $stmt->execute();
             } else {
-                $stmt = $pdo->prepare("INSERT INTO location_inventories (location_id, product_id, quantity) VALUES (:location_id, :product_id, :quantity)");
+                $sql = 'INSERT INTO location_inventories (location_id, product_id, quantity) VALUES (:location_id, :product_id, :quantity)';
+                $stmt = $dbh->prepare($sql);
                 $stmt->bindValue(':location_id', $location_id, PDO::PARAM_INT);
                 $stmt->bindValue(':product_id', $product_id, PDO::PARAM_INT);
                 $stmt->bindValue(':quantity', $quantity, PDO::PARAM_INT);
@@ -48,7 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $current_qty = $inventory ? $inventory['quantity'] : 0;
                 $error = "在庫が不足しています。（現在の在庫数: {$current_qty}点）";
             } else {
-                $stmt = $pdo->prepare("UPDATE location_inventories SET quantity = quantity - :quantity WHERE id = :id");
+                $sql = 'UPDATE location_inventories SET quantity = quantity - :quantity WHERE id = :id';
+                $stmt = $dbh->prepare($sql);
                 $stmt->bindValue(':quantity', $quantity, PDO::PARAM_INT);
                 $stmt->bindValue(':id', $inventory['id'], PDO::PARAM_INT);
                 $stmt->execute();
@@ -59,7 +65,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // 成功した場合のみ履歴（ログ）を登録
         if ($success) {
-            $log_stmt = $pdo->prepare("INSERT INTO inventory_logs (location_id, product_id, type, quantity) VALUES (:location_id, :product_id, :type, :quantity)");
+            $sql = 'INSERT INTO inventory_logs (location_id, product_id, type, quantity) VALUES (:location_id, :product_id, :type, :quantity)';
+            $log_stmt = $dbh->prepare($sql);
             $log_stmt->bindValue(':location_id', $location_id, PDO::PARAM_INT);
             $log_stmt->bindValue(':product_id', $product_id, PDO::PARAM_INT);
             $log_stmt->bindValue(':type', $type, PDO::PARAM_STR);
@@ -70,8 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // 拠点一覧と商品一覧を取得
-$locations = $pdo->query("SELECT * FROM locations")->fetchAll(PDO::FETCH_ASSOC);
-$products = $pdo->query("SELECT * FROM products")->fetchAll(PDO::FETCH_ASSOC);
+$locations = $dbh->query("SELECT * FROM locations")->fetchAll(PDO::FETCH_ASSOC);
+$products = $dbh->query("SELECT * FROM products")->fetchAll(PDO::FETCH_ASSOC);
 
 // 現在の在庫一覧を取得
 $sql_inv = "SELECT li.id, l.name AS location_name, p.name AS product_name, li.quantity 
@@ -79,7 +86,7 @@ $sql_inv = "SELECT li.id, l.name AS location_name, p.name AS product_name, li.qu
             JOIN locations l ON li.location_id = l.id
             JOIN products p ON li.product_id = p.id
             ORDER BY li.id DESC";
-$inventories = $pdo->query($sql_inv)->fetchAll(PDO::FETCH_ASSOC);
+$inventories = $dbh->query($sql_inv)->fetchAll(PDO::FETCH_ASSOC);
 
 // 入出庫ログ一覧を取得（最新10件）
 $sql_logs = "SELECT lg.id, lg.type, lg.quantity, lg.created_at, l.name AS location_name, p.name AS product_name
@@ -87,7 +94,7 @@ $sql_logs = "SELECT lg.id, lg.type, lg.quantity, lg.created_at, l.name AS locati
              JOIN locations l ON lg.location_id = l.id
              JOIN products p ON lg.product_id = p.id
              ORDER BY lg.id DESC LIMIT 10";
-$logs = $pdo->query($sql_logs)->fetchAll(PDO::FETCH_ASSOC);
+$logs = $dbh->query($sql_logs)->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -123,7 +130,7 @@ $logs = $pdo->query($sql_logs)->fetchAll(PDO::FETCH_ASSOC);
         <label>商品：</label>
         <select name="product_id" required>
             <?php foreach ($products as $prod): ?>
-                <option value="<?php echo $prod['id']; ?>"><?php echo htmlspecialchars($prod['name'], ENT_QUOTES, 'UTF-8'); ?></option>
+                <option value="<?php echo $prod['id']; ?>"><?php echo str2html($prod['name']); ?></option>
             <?php endforeach; ?>
         </select>
 
@@ -143,8 +150,8 @@ $logs = $pdo->query($sql_logs)->fetchAll(PDO::FETCH_ASSOC);
         </tr>
         <?php foreach ($inventories as $inv): ?>
             <tr>
-                <td><?php echo htmlspecialchars($inv['location_name'], ENT_QUOTES, 'UTF-8'); ?></td>
-                <td><?php echo htmlspecialchars($inv['product_name'], ENT_QUOTES, 'UTF-8'); ?></td>
+                <td><?php echo str2html($inv['location_name']); ?></td>
+                <td><?php echo str2html($inv['product_name']); ?></td>
                 <td><?php echo $inv['quantity']; ?> 点</td>
             </tr>
         <?php endforeach; ?>
@@ -170,8 +177,8 @@ $logs = $pdo->query($sql_logs)->fetchAll(PDO::FETCH_ASSOC);
                         <span style="color: red; font-weight: bold;">出庫</span>
                     <?php endif; ?>
                 </td>
-                <td><?php echo htmlspecialchars($log['location_name'], ENT_QUOTES, 'UTF-8'); ?></td>
-                <td><?php echo htmlspecialchars($log['product_name'], ENT_QUOTES, 'UTF-8'); ?></td>
+                <td><?php echo str2html($log['location_name']); ?></td>
+                <td><?php echo str2html($log['product_name']); ?></td>
                 <td><?php echo $log['quantity']; ?> 点</td>
             </tr>
         <?php endforeach; ?>

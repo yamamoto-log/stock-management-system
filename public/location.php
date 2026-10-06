@@ -1,17 +1,19 @@
 <?php
 
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/../src/db.php';
+require_once __DIR__ . '/../src/functions.php';
 
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['location_name'])) {
     $name = $_POST['location_name'];
-    $stmt = $pdo->prepare("INSERT INTO locations (name) VALUES (:name)");
+    $stmt = $dbh->prepare("INSERT INTO locations (name) VALUES (:name)");
     $stmt->bindValue(':name', $name, PDO::PARAM_STR);
     $stmt->execute();
-    $message = '「' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '」を登録しました！';
+    $message = '「' . str2html($name) . '」を登録しました！';
 }
 
-$stmt = $pdo->query("SELECT * FROM locations ORDER BY id DESC");
+$sql = 'SELECT * FROM locations ORDER BY id DESC';
+$stmt = $dbh->query($sql);
 $locations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
@@ -38,7 +40,7 @@ $locations = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <ul>
         <?php foreach ($locations as $loc): ?>
             <li>
-                ID: <?php echo $loc['id']; ?> - <?php echo htmlspecialchars($loc['name'], ENT_QUOTES, 'UTF-8'); ?>
+                ID: <?php echo $loc['id']; ?> - <?php echo str2html($loc['name']); ?>
                 | <a href="location_edit.php?id=<?php echo $loc['id']; ?>">編集</a>
                 | <a href="location_delete.php?id=<?php echo $loc['id']; ?>" onclick="return confirm('本当に削除しますか？');">削除</a>
             </li>
