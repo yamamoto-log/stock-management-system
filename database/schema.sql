@@ -1,1 +1,22 @@
--- テーブル定義（CREATE TABLE文）
+CREATE TABLE stocks (
+    box_id     INT UNSIGNED NOT NULL,
+    product_id INT UNSIGNED NOT NULL,
+    qty        INT NOT NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (box_id, product_id),
+    CONSTRAINT chk_stocks_qty CHECK (qty > 0),
+    CONSTRAINT fk_stocks_box     FOREIGN KEY (box_id)     REFERENCES boxes(id)    ON DELETE RESTRICT,
+    CONSTRAINT fk_stocks_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+CREATE TABLE locations (
+    id INT UNSIGNED NOT NULL DEFAULT AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    note TEXT DEFAULT NULL,
+    status ENUM('active','inactinve') NOT NULL DEFAULT 'active',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT uq_locations_name,
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
