@@ -1,1 +1,7 @@
-.env
+# DB接続設定（本物のパスワードを含む）
+config/database.php
+
+# エディタ・OSが作るファイル
+.vscode/
+.idea/
+*.swp
