@@ -1,147 +1,96 @@
-# 拠点別在庫管理システム (Multi-Location Inventory Management System)
+# 着物レンタル在庫管理システム
 
-複数拠点（店舗・倉庫等）における商品在庫の一元管理および入出庫履歴（ログ）の追跡を行えるWebアプリケーションです。
+> 着物レンタル店の商品が「どの拠点の、どの箱に、何個あるか」を、箱を開けずに確認できる在庫管理Webアプリ
 
----
+> **デモ:** 準備中 ／ **技術:** HTML, CSS, JavaScript, PHP, MariaDB（フレームワーク不使用）
 
-## 📋 システム概要
-
-拠点ごとの「現在の在庫数」を管理するだけでなく、入出庫の操作履歴（ログ）を自動で保存・表示することで、トレーサビリティ（追跡可能性）を考慮した設計になっています。
-
-### 主な機能
-
-- **拠点マスター管理** (`location.php`, `location_edit.php`, `location_delete.php`)
-  - 拠点（店舗や倉庫など）の新規登録・一覧表示・名称変更（編集）・削除
-- **商品マスター管理** (`product.php`)
-  - 管理対象商品の新規登録・一覧表示
-- **在庫・入出庫管理** (`inventory.php`)
-  - 拠点×商品ごとの在庫登録および数量の加算（入庫）／減算（出庫）
-  - 出庫時の在庫不足チェック（マイナス在庫を防止するバリデーション制御）
-  - 拠点別在庫一覧のリアルタイム表示（`JOIN` 結合による名称補完）
-- **入出庫履歴（ログ）管理** (`inventory.php`)
-  - 入出庫実行時の日時・拠点・商品・種別・数量の自動記録
-  - 最新10件の入出庫ログ一覧表示
+> 🚧 **開発中**：要件定義・DB設計・開発環境の構築まで完了。現在、実装に着手しています（[開発状況](#開発状況)）。
 
 ---
 
-## 🛠 使用技術 / 動作環境
+## ひとことで言うと
 
-| 項目           | 技術・環境                               |
-| -------------- | ---------------------------------------- |
-| **OS**         | Linux (Ubuntu / Linux Mint)              |
-| **Web Server** | Apache 2.4                               |
-| **Language**   | PHP 8.x (PDO拡張)                        |
-| **Database**   | MySQL / MariaDB (管理ツール: phpMyAdmin) |
-
----
-
-## 🗄 データベース設計
-
-### 構成概要
-
-データベース名: `stock_db`
-
-```text
- [ locations ]               [ products ]
-   (拠点マスタ)                 (商品マスタ)
-    - id (PK)                   - id (PK)
-    - name                      - name
-      │                           │
-      ├──────────────┐            ├──────────────┐
-      │ (1:N)        │ (1:N)      │ (1:N)        │ (1:N)
-      ▼              ▼            ▼              ▼
- [ location_inventories ]    [ inventory_logs ]
-    (拠点別在庫トランザクション)   (入出庫履歴ログ)
-     - id (PK)                    - id (PK)
-     - location_id (FK)           - location_id (FK)
-     - product_id (FK)            - product_id (FK)
-     - quantity                   - type ('in' / 'out')
-                                  - quantity
-                                  - created_at
-```
-
-### テーブル定義 (DDL)
-
-```sql
-CREATE DATABASE IF NOT EXISTS stock_db CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE stock_db;
-
--- 1. 拠点テーブル
-CREATE TABLE locations (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- 2. 商品テーブル
-CREATE TABLE products (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- 3. 拠点別在庫テーブル
-CREATE TABLE location_inventories (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    location_id INT NOT NULL,
-    product_id INT NOT NULL,
-    quantity INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (location_id) REFERENCES locations(id),
-    FOREIGN KEY (product_id) REFERENCES products(id)
-);
-
--- 4. 入出庫ログテーブル
-CREATE TABLE inventory_logs (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    location_id INT NOT NULL,
-    product_id INT NOT NULL,
-    type VARCHAR(10) NOT NULL,
-    quantity INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (location_id) REFERENCES locations(id),
-    FOREIGN KEY (product_id) REFERENCES products(id)
-);
-
-```
+- **解決したい課題**：  
+本部に送ったオフシーズン品が、どの箱に入っているか分からない。Excelの在庫数と実物がずれ、原因も追えない
+- **自分の担当**：  
+個人開発（要件定義・画面設計・DB設計・実装・テスト・公開まで一人で担当）
+- **ここまでの成果**：  
+在庫の整合性をDB構造と制約で保証する設計を完成。制約テスト25件で、ルールどおりにデータを拒否・許可することを確認済み
 
 ---
 
-## 📁 画面・ファイル構成
+## 開発背景
 
-| ファイル名            | 役割                   | 主な処理                                                                       |
-| --------------------- | ---------------------- | ------------------------------------------------------------------------------ |
-| `location.php`        | 拠点一覧・登録         | 拠点データの `INSERT` および `SELECT` 表示                                     |
-| `location_edit.php`   | 拠点名の編集           | 該当IDの拠点名を `UPDATE`                                                      |
-| `location_delete.php` | 拠点の削除             | 該当IDの拠点データを `DELETE`                                                  |
-| `product.php`         | 商品一覧・登録         | 商品データの `INSERT` および `SELECT` 表示                                     |
-| `inventory.php`       | 在庫管理・入出庫・ログ | 在庫数の `INSERT` / `UPDATE`、ログの `INSERT`、`JOIN` による結合取得・一覧表示 |
+- **きっかけ**：  
+以前、着物レンタルの現場で働いていた。店舗に置ききれないオフシーズン品を本部へ送ると、手書きの箱ラベルは表記がバラバラで、箱を開けないと中身が分からなかった
+- **既存の解決策の不足**：  
+Excelの在庫表は「拠点ごとの数」しか持てず、箱単位の中身や、送った商品が届いたかまでは管理できない。忙しいときの記録漏れで数がずれても、原因を追跡できなかった
+- **目指したこと**：  
+現地へ行かずに「どこに何があるか」が分かり、数が合わないときは「いつ・誰が・何をしたか」までさかのぼれる状態
 
 ---
 
-## 🚀 セットアップ手順
+## 主な機能
 
-1. **データベースの作成**
+（実装後にスクリーンショットを追加予定）
 
-- phpMyAdmin にて `stock_db` を作成し、上記 DDL（SQL）を実行して4つのテーブルを作成します。
+- **箱単位の在庫管理**：  箱IDから中身が分かる。箱に入っていない商品も「箱なし」として同じ仕組みで管理
+- **在庫検索**：          商品から拠点別・箱別の数量を確認。種類・対象（女・男・子）・季節（夏物・冬物・通年）で絞り込める
+- **拠点間の移動**：      商品単位の移動と、箱ごとの移動に対応。発送→受取確認の2段階で記録し、未受取の移動を一覧表示
+- **保管場所変更**：     同じ拠点内で、箱と箱、箱と箱なしの間で商品を移す。移動と同時に新しい箱を作成できる
+- **操作履歴**：         在庫が変わるすべての操作を、日時・操作者つきで記録
 
-2. **ファイルの配置**
+---
 
-- Webサーバーの公開ディレクトリ（`/var/www/html/`）へ各 `.php` ファイルを配置します。
+## 技術的なこだわり（設計・実装）
 
-3. **パーミッション（権限）設定**
+### 1. 「1つの事実を1箇所で持つの原則」によるデータ整合性の保証
+* **課題**： 「拠点在庫数」と「箱内数量」を別テーブルで管理すると、二重更新による不整合が構造的に発生する。
+* **工夫・効果**： 「箱なし」も各拠点の特殊な箱（共通ID）として扱い、全在庫を**「箱 × 商品 × 数量」の1テーブルに集約**。拠点在庫数はSQL集計でリアルタイム算出するため、拠点合計と箱内数量の食い違いが仕組み上絶対に起こりません。
 
-- ターミナルでApacheがファイルを読み込めるようパーミッションを設定します。
+### 2. 業務ルールのDB制約化と制約テスト（25パターン）での検証
+* **課題**： アプリケーション層（PHP）のロジック抜けによる不正データの混入リスク。
+* **工夫・効果**： 「在庫数 ≧ 1」「箱なし箱は拠点に1つのみ・移動不可」といった業務ルールを**CHECK制約・UNIQUE制約**としてDBに実装。わざとルール違反データを挿入する25パターンの制約テストを作成した際、`NOT NULL` の `ENUM` 型は値を省略すると自動で初期値が入る仕様に気づき、カラム型を `VARCHAR ＋ CHECK制約` に見直して堅牢性を高めました。
+
+### 3. トランザクションと条件付きUPDATEによる二重加算防止
+* **課題**： 配送受取時のボタン連打や同時操作による在庫数の二重更新。
+* **工夫・効果**： 発送時に送り元から在庫を減らし、受取確認時に送り先へ加算する処理を構築。受取処理は **「状態が輸送中の場合のみ更新する」条件付きUPDATE** と **トランザクション処理** で厳格に行うことで、二度押しや並行処理が起きても二重加算されない安全な設計にしました。
+
+---
+
+## 起動方法
 
 ```bash
-sudo chmod 644 /var/www/html/*.php
+# 1. リポジトリのクローンと移動
+git clone [https://github.com/yamamoto-log/stock-management-system.git](https://github.com/yamamoto-log/stock-management-system.git)
+cd stock-management-system
+
+# 2. DB・ユーザー・テーブルの作成（init.sqlのパスワードを変更後に実行）
+mysql -u root -p < database/init.sql
+mysql -u root -p kimono_inventory < database/schema.sql
+
+# 3. 接続設定ファイルの作成と環境設定
+cp config/database.example.php config/database.php
+
+# 4. ビルトインサーバーの起動（http://localhost:8000）
+php -S localhost:8000 -t public
 ```
 
-4. **DB接続情報の変更**
+※ Linux で `SQLSTATE[HY000] [2002] No such file or directory` が出る場合は、`config/database.php` の `socket` に MariaDB のソケットの場所を指定してください（`SHOW VARIABLES LIKE 'socket';` で確認できます）。
 
-- 各PHPファイル内の `$db_user` および `$db_pass` をご自身の環境に合わせて変更します。
+## 開発状況
 
-5. **動作確認**
+- [x] 要件定義
+- [x] 画面一覧・画面遷移
+- [x] データベース設計
+- [x] 開発環境の構築
+- [ ] 開発の土台づくり（共通レイアウト・共通関数・初期データ）
+- [ ] 各機能の実装（商品・拠点・入出庫・移動・箱・履歴）
+- [ ] ログイン・セキュリティ
+- [ ] テスト・公開
 
-- ブラウザで `http://localhost/location.php` へアクセスし、拠点・商品の登録および入出庫の実行を行います。
+## 設計資料
 
+- [要件定義書](docs/01_requirements.md)：目的・業務ルール・MVPの範囲・画面一覧
+- [ER図](docs/02_er.md)：テーブル構成と、整合性を保つ仕組み
+- [テーブル定義](database/schema.sql) ／ [制約テスト](database/test_constraints.sql)
