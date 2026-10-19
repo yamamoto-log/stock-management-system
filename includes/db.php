@@ -33,6 +33,7 @@ function getDb(): PDO
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,       // 結果を連想配列で受け取る
         PDO::ATTR_EMULATE_PREPARES   => false,                  // 本物のプリペアドステートメントを使う
     ]);
+    $pdo->exec("SET time_zone = '+09:00'");
 
     return $pdo;
 }
