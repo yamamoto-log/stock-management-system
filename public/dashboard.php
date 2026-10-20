@@ -2,24 +2,10 @@
 require_once __DIR__ . '/../includes/bootstrap.php';
 require_login();
 
-$user = current_user();
+$pageTitle = 'ダッシュボード';
+require __DIR__ . '/../includes/layout/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="ja">
 
-<head>
-    <meta charset="UTF-8">
-    <title>ダッシュボード</title>
-</head>
+<p>ログインしました。ここに受取待ちの一覧などを表示します。</p>
 
-<body>
-    <h1>ダッシュボード</h1>
-    <p><?= h($user['name']) ?> さん（<?= h(label('role', $user['role'])) ?>）でログインしています。</p>
-
-    <form method="post" action="/logout.php">
-        <?= csrf_field() ?>
-        <button type="submit">ログアウト</button>
-    </form>
-</body>
-
-</html>
+<?php require __DIR__ . '/../includes/layout/footer.php'; ?>

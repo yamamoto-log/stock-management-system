@@ -40,35 +40,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!DOCTYPE html>
-<html lang="ja">
+<?php
+$pageTitle = 'ログイン';
+require __DIR__ . '/../includes/layout/header.php';
+?>
 
-<head>
-    <meta charset="UTF-8">
-    <title>ログイン</title>
-</head>
+<?php if ($error !== ''): ?>
+    <p class="flash flash-error"><?= h($error) ?></p>
+<?php endif; ?>
 
-<body>
-    <h1>ログイン</h1>
+<form method="post">
+    <?= csrf_field() ?>
+    <div class="form-row">
+        <label for="login_id">ログインID</label>
+        <input type="text" id="login_id" name="login_id" value="<?= h($loginId) ?>" required>
+    </div>
+    <div class="form-row">
+        <label for="password">パスワード</label>
+        <input type="password" id="password" name="password" required>
+    </div>
+    <button type="submit">ログイン</button>
+</form>
 
-    <?php if ($error !== ''): ?>
-        <p><?= h($error) ?></p>
-    <?php endif; ?>
-
-    <form method="post">
-        <?= csrf_field() ?>
-        <p>
-            <label>ログインID<br>
-                <input type="text" name="login_id" value="<?= h($loginId) ?>" required>
-            </label>
-        </p>
-        <p>
-            <label>パスワード<br>
-                <input type="password" name="password" required>
-                <!-- パスワードはHTMLに書き出さないようvalueはつけない -->
-            </label>
-        </p>
-        <button type="submit">ログイン</button>
-    </form>
-</body>
-
-</html>
+<?php require __DIR__ . '/../includes/layout/footer.php'; ?>
