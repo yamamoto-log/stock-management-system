@@ -87,3 +87,27 @@ function get_flash(): array
     unset($_SESSION['flash']);
     return $messages;
 }
+
+/**
+ * 確認画面の入力内容をセッションに保存する
+ */
+function form_save(string $key, array $data): void
+{
+    $_SESSION['forms'][$key] = $data;
+}
+
+/**
+ * 保存した入力内容を取り出す（なければ null）
+ */
+function form_load(string $key): ?array
+{
+    return $_SESSION['forms'][$key] ?? null;
+}
+
+/**
+ * 保存した入力内容を消す
+ */
+function form_clear(string $key): void
+{
+    unset($_SESSION['forms'][$key]);
+}

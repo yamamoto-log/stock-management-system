@@ -11,6 +11,13 @@ if ($appConfig['debug']) {
 } else {
     ini_set('display_errors', '0');
     ini_set('log_errors', '1');
+
+    // 予期しないエラーが起きたら、詳細を隠して共通のメッセージを表示する
+    set_exception_handler(function (Throwable $e) {
+        error_log((string)$e);
+        http_response_code(500);
+        echo 'エラーが発生しました。時間をおいて、もう一度操作してください。';
+    });
 }
 
 // タイムゾーン
