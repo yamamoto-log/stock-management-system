@@ -5,6 +5,11 @@
 
 
 ---
+### 2026/10/22
+* これまでのコードのチェック
+  - Cookieの設定（HttpOnly・Secure・SameSite）の漏れを発見
+* 次回やること
+  - [ ] HttpOnly・Secure・SameSiteの実装
 
 ### 2026/10/21
 * 開発の土台づくり（Issue 5）完了
