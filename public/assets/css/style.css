@@ -119,3 +119,11 @@ td.num { text-align: right; }
 .subtotal-row td { font-weight: bold; background: #faf9f6; }
 .button-row { display: flex; flex-wrap: wrap; gap: 8px; }
 h2 { font-size: 1.2rem; margin: 24px 0 8px; }
+
+.emphasis-row th,
+.emphasis-row td {
+  background: #fff3cd;
+  font-weight: bold;
+}
+.emphasis-row th { border-left: 4px solid #e0a800; }
+.emphasis-note { font-size: 0.85rem; font-weight: normal; color: #8a6d00; }

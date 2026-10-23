@@ -128,3 +128,23 @@ function form_clear(string $key): void
 {
     unset($_SESSION['forms'][$key]);
 }
+
+/**
+ * 項目のエラーメッセージを表示する（エラーがなければ何も出さない）
+ * 使い方：<?= field_error($errors, 'name') ?>
+ */
+function field_error(array $errors, string $key): string
+{
+    if (!isset($errors[$key])) {
+        return '';
+    }
+    return '<p class="field-error">' . h($errors[$key]) . '</p>';
+}
+
+/**
+ * 空の文字列を NULL にする（任意項目を DB に保存するとき用）
+ */
+function null_if_empty(string $value): ?string
+{
+    return $value === '' ? null : $value;
+}
