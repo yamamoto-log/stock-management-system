@@ -27,8 +27,8 @@ function csrf_field(): string
  */
 function verify_csrf(): void
 {
-    $sent = $_POST['csrf_token'] ?? '';
-    if (!hash_equals(csrf_token(), $sent)) {
+    $sent = $_POST['csrf_token'] ?? ''; // 教科書の$post_token にあたる
+    if (!hash_equals(csrf_token(), $sent)) { // csrf_token() が教科書の $session_token にあたる 
         http_response_code(400);
         exit('不正なリクエストです。画面を再読み込みしてから、もう一度操作してください。');
     }

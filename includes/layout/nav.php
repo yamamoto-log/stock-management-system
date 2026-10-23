@@ -1,26 +1,27 @@
 <?php
 // 共通メニュー
-$menu = [
+// 読み込んだ画面と変数名がぶつからないよう、nav で始まる名前にしている
+$navUser = current_user();
+$navItems = [
     '/products/'   => '商品一覧',
     '/boxes/'      => '箱一覧',
     '/transfers/'  => '移動一覧',
     '/histories/'  => '履歴',
     '/operations/' => '在庫操作',
 ];
-if ($user['role'] === 'admin') {
-    $menu['/locations/'] = '拠点管理';
+if ($navUser['role'] === 'admin') {
+    $navItems['/locations/'] = '拠点管理';
 }
 
-// 今開いている画面のメニューを目立たせるため、URLの先頭を比べる
-$currentPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$navCurrentPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 ?>
 <nav class="site-nav">
     <ul>
-        <?php foreach ($menu as $path => $name): ?>
+        <?php foreach ($navItems as $navPath => $navLabel): ?>
             <li>
-                <a href="<?= h($path) ?>"
-                    class="<?= str_starts_with($currentPath, $path) ? 'is-current' : '' ?>">
-                    <?= h($name) ?>
+                <a href="<?= h($navPath) ?>"
+                    class="<?= str_starts_with($navCurrentPath, $navPath) ? 'is-current' : '' ?>">
+                    <?= h($navLabel) ?>
                 </a>
             </li>
         <?php endforeach; ?>
