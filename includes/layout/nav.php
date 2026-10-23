@@ -1,6 +1,7 @@
 <?php
 // 共通メニュー
 // 読み込んだ画面と変数名がぶつからないよう、nav で始まる名前にしている
+$navUser = current_user();
 $navItems = [
     '/products/'   => '商品一覧',
     '/boxes/'      => '箱一覧',
@@ -8,7 +9,7 @@ $navItems = [
     '/histories/'  => '履歴',
     '/operations/' => '在庫操作',
 ];
-if ($user['role'] === 'admin') {
+if ($navUser['role'] === 'admin') {
     $navItems['/locations/'] = '拠点管理';
 }
 
