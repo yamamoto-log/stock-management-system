@@ -303,7 +303,7 @@ require __DIR__ . '/../../includes/layout/header.php';
     </div>
 
     <p>
-        拠点の在庫 <?= h((string)$locationTotal) ?> ／
+        全拠点の在庫 <?= h((string)$locationTotal) ?> ／
         輸送中 <?= h((string)$transitTotal) ?> ／
         <strong>総数 <?= h((string)$grandTotal) ?></strong>
     </p>
