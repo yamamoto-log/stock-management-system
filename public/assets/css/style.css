@@ -113,3 +113,9 @@ button, .button {
 
 th { text-align: center; }
 td.num { text-align: right; }
+
+.detail-table { max-width: 600px; }
+.detail-table th { width: 8em; text-align: left; }
+.subtotal-row td { font-weight: bold; background: #faf9f6; }
+.button-row { display: flex; flex-wrap: wrap; gap: 8px; }
+h2 { font-size: 1.2rem; margin: 24px 0 8px; }
