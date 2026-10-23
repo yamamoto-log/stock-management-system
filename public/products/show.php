@@ -29,6 +29,59 @@ if ($product === false) {
     exit;
 }
 
+
+// ---------------------------------------------------------------
+// 廃番・利用中に戻す（管理者のみ。POST で受け付ける）
+// ---------------------------------------------------------------
+$confirmAction = null;   // 確認の表示をする操作（discontinue / restore）
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_admin();
+    verify_csrf();
+
+    $action = $_POST['action'] ?? '';
+    $step   = $_POST['step'] ?? '';
+    $backTo = '/products/show.php?id=' . $productId;
+
+    if (!in_array($action, ['discontinue', 'restore'], true)) {
+        redirect($backTo);
+    }
+
+    if ($step === 'confirm') {
+        $confirmAction = $action;
+    } elseif ($step === 'commit' && $action === 'discontinue') {
+        // 廃番にする条件：在庫がない、輸送中の商品移動がない
+        $stmt = $pdo->prepare(
+            "SELECT
+               (SELECT COUNT(*) FROM stocks WHERE product_id = ?) AS stock_rows,
+               (SELECT COUNT(*)
+                  FROM operation_items oi
+                  JOIN operations o ON o.id = oi.operation_id
+                 WHERE o.type = 'item_transfer' AND o.status = 'in_transit'
+                   AND oi.product_id = ?) AS transit_rows"
+        );
+        $stmt->execute([$productId, $productId]);
+        $check = $stmt->fetch();
+
+        if ((int)$check['stock_rows'] > 0) {
+            set_flash('error', '在庫が残っているため廃番にできません。');
+        } elseif ((int)$check['transit_rows'] > 0) {
+            set_flash('error', '輸送中の移動があるため廃番にできません。');
+        } else {
+            $pdo->prepare("UPDATE products SET status = 'inactive' WHERE id = ?")->execute([$productId]);
+            set_flash('success', '商品を廃番にしました。');
+        }
+        redirect($backTo);
+    } elseif ($step === 'commit' && $action === 'restore') {
+        $pdo->prepare("UPDATE products SET status = 'active' WHERE id = ?")->execute([$productId]);
+        set_flash('success', '商品を利用中に戻しました。');
+        redirect($backTo);
+    } else {
+        redirect($backTo);
+    }
+}
+
+
 // ---------------------------------------------------------------
 // 2. 拠点別・箱別の在庫（輸送中の箱は除く）
 //    拠点の順に並べ、同じ拠点の中では箱なしを先にする
@@ -97,6 +150,24 @@ require __DIR__ . '/../../includes/layout/header.php';
 
 <h2><?= h(product_code((int)$product['id'])) ?>　<?= h($product['name']) ?></h2>
 
+<?php if ($confirmAction !== null): ?>
+    <div class="confirm-box">
+        <p>
+            <?= $confirmAction === 'discontinue'
+                ? 'この商品を廃番にしますか？　廃番にすると、在庫操作の画面で選べなくなります。'
+                : 'この商品を利用中に戻しますか？' ?>
+        </p>
+        <form method="post" class="button-row">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="<?= h($confirmAction) ?>">
+            <button type="submit" name="step" value="commit">
+                <?= $confirmAction === 'discontinue' ? '廃番にする' : '利用中に戻す' ?>
+            </button>
+            <a href="/products/show.php?id=<?= h((string)$product['id']) ?>" class="button button-secondary">キャンセル</a>
+        </form>
+    </div>
+<?php endif; ?>
+
 <div class="table-wrap">
     <table class="detail-table">
         <tr>
@@ -148,7 +219,14 @@ require __DIR__ . '/../../includes/layout/header.php';
     <?php endif; ?>
     <?php if ($user['role'] === 'admin'): ?>
         <a href="/products/edit.php?id=<?= h((string)$product['id']) ?>" class="button button-secondary">編集する</a>
-    <?php endif; ?>
+<form method="post">
+    <?= csrf_field() ?>
+    <input type="hidden" name="action" value="<?= $isActive ? 'discontinue' : 'restore' ?>">
+    <button type="submit" name="step" value="confirm" class="button-secondary">
+        <?= $isActive ? '廃番にする' : '利用中に戻す' ?>
+    </button>
+</form>
+<?php endif; ?>
 </p>
 
 <h2>在庫</h2>

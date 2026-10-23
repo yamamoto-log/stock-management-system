@@ -127,3 +127,12 @@ h2 { font-size: 1.2rem; margin: 24px 0 8px; }
 }
 .emphasis-row th { border-left: 4px solid #e0a800; }
 .emphasis-note { font-size: 0.85rem; font-weight: normal; color: #8a6d00; }
+
+.confirm-box {
+  margin: 16px 0;
+  padding: 16px;
+  background: #fff8e6;
+  border: 1px solid #e6c46b;
+  border-radius: 4px;
+}
+.button-row form { margin: 0; }
