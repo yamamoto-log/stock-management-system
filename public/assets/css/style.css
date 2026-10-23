@@ -96,3 +96,20 @@ button, .button {
   background: none;
   text-decoration: underline;
 }
+
+.search-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 16px;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #fff;
+}
+.search-form .form-row { margin-bottom: 0; }
+.search-form input[type="text"],
+.search-form select { width: auto; }
+.search-form input[type="checkbox"] { width: auto; }
+
+th { text-align: center; }
+td.num { text-align: right; }
