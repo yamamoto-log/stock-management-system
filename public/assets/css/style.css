@@ -96,3 +96,43 @@ button, .button {
   background: none;
   text-decoration: underline;
 }
+
+.search-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 16px;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #fff;
+}
+.search-form .form-row { margin-bottom: 0; }
+.search-form input[type="text"],
+.search-form select { width: auto; }
+.search-form input[type="checkbox"] { width: auto; }
+
+th { text-align: center; }
+td.num { text-align: right; }
+
+.detail-table { max-width: 600px; }
+.detail-table th { width: 8em; text-align: left; }
+.subtotal-row td { font-weight: bold; background: #faf9f6; }
+.button-row { display: flex; flex-wrap: wrap; gap: 8px; }
+h2 { font-size: 1.2rem; margin: 24px 0 8px; }
+
+.emphasis-row th,
+.emphasis-row td {
+  background: #fff3cd;
+  font-weight: bold;
+}
+.emphasis-row th { border-left: 4px solid #e0a800; }
+.emphasis-note { font-size: 0.85rem; font-weight: normal; color: #8a6d00; }
+
+.confirm-box {
+  margin: 16px 0;
+  padding: 16px;
+  background: #fff8e6;
+  border: 1px solid #e6c46b;
+  border-radius: 4px;
+}
+.button-row form { margin: 0; }

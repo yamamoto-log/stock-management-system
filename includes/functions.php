@@ -35,14 +35,15 @@ function box_code(int $id): string
     return sprintf('BOX-%04d', $id);
 }
 
+
 /**
- * ENUMなどの値を、画面に表示する日本語に変換する
- * 例：label('season', 'summer') → 夏物
+ * ENUMなどの値と、日本語の表示の一覧
  */
-function label(string $type, ?string $value): string
+function label_map(): array
 {
-    $labels = [
+    return [
         'status'    => ['active' => '利用中', 'inactive' => '停止中'],
+        'product_status' => ['active' => '利用中', 'inactive' => '廃番'],  // 停止中でなく廃番と表示
         'role'      => ['normal' => '一般', 'admin' => '管理者'],
         'target'    => ['women' => '女', 'men' => '男', 'children' => '子'],
         'season'    => ['summer' => '夏物', 'winter' => '冬物', 'all_season' => '通年'],
@@ -65,9 +66,25 @@ function label(string $type, ?string $value): string
             'other'    => 'その他',
         ],
     ];
-
-    return $labels[$type][$value] ?? '';
 }
+
+/**
+ * 値を日本語に変換する　例：label('season', 'summer') → 夏物
+ */
+function label(string $type, ?string $value): string
+{
+    return label_map()[$type][$value] ?? '';
+}
+
+/**
+ * 選択肢の一覧を返す　例：labels('season') → ['summer' => '夏物', ...]
+ */
+function labels(string $type): array
+{
+    return label_map()[$type] ?? [];
+}
+
+
 
 /**
  * 次の画面に1回だけ表示するメッセージを保存する
@@ -110,4 +127,24 @@ function form_load(string $key): ?array
 function form_clear(string $key): void
 {
     unset($_SESSION['forms'][$key]);
+}
+
+/**
+ * 項目のエラーメッセージを表示する（エラーがなければ何も出さない）
+ * 使い方：<?= field_error($errors, 'name') ?>
+ */
+function field_error(array $errors, string $key): string
+{
+    if (!isset($errors[$key])) {
+        return '';
+    }
+    return '<p class="field-error">' . h($errors[$key]) . '</p>';
+}
+
+/**
+ * 空の文字列を NULL にする（任意項目を DB に保存するとき用）
+ */
+function null_if_empty(string $value): ?string
+{
+    return $value === '' ? null : $value;
 }
