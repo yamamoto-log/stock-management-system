@@ -23,8 +23,23 @@ if ($appConfig['debug']) {
 // タイムゾーン
 date_default_timezone_set($appConfig['timezone']);
 
-// セッション開始
+
+
+// セッションの Cookie の設定（session_start() より前に行う）
+$isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+
+session_set_cookie_params([
+    'lifetime' => 0,          // ブラウザを閉じたら Cookie を消す
+    'path'     => '/',
+    'secure'   => $isHttps,   // HTTPS のときだけ Secure を付ける
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
+ini_set('session.use_strict_mode', '1');   // サーバーが発行していないセッションIDを受け付けない
+
 session_start();
+
+
 
 // 共通の処理
 require_once __DIR__ . '/db.php';
