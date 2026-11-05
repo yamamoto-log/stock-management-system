@@ -136,3 +136,7 @@ h2 { font-size: 1.2rem; margin: 24px 0 8px; }
   border-radius: 4px;
 }
 .button-row form { margin: 0; }
+
+.loose-row td { background: #eef5fb; }
+
+.is-inactive td { color: #999; background: #f3f3f3; }

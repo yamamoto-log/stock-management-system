@@ -131,7 +131,7 @@ require __DIR__ . '/../../includes/layout/header.php';
         </tr>
         <?php foreach ($locations as $location): ?>
             <?php $isActive = $location['status'] === 'active'; ?>
-            <tr>
+            <tr class="<?= $isActive ? '' : 'is-inactive' ?>">
                 <td><?= h($location['name']) ?></td>
                 <td><?= h(label('status', $location['status'])) ?></td>
                 <td class="num"><?= h((string)$location['stock_qty']) ?></td>
