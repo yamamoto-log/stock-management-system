@@ -84,6 +84,7 @@ function stock_options(PDO $pdo, int $locationId): array
             'box_id'     => $boxId,
             'product_id' => $productId,
             'qty'        => (int)$row['qty'],
+            'name'       => $storage . ' / ' . ($products[$productId] ?? product_code($productId)),
             'label'      => $storage . ' / ' . ($products[$productId] ?? product_code($productId))
                 . '（残 ' . $row['qty'] . '）',
         ];
