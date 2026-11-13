@@ -98,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($step === 'commit') {
         $input = form_load($formKey);
         if ($input === null) {
+            set_flash('error', '確認中の内容が見つかりませんでした。別の画面で同じ操作をしたか、時間がたって無効になった可能性があります。もう一度入力してください。');
             redirect($_SERVER['PHP_SELF']);   // セッション切れなどで内容がない
         }
         $pdo = getDb();

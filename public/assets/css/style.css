@@ -1,31 +1,55 @@
-/* ===== 基本 ===== */
+/* =====================================================================
+   着物レンタル在庫管理システム　共通スタイル（public/assets/css/style.css）
+
+   ・すべての画面で、この1つのファイルを読み込む（includes/layout/header.php）
+   ・色の基本は、えんじ色（#7a2e3a）。ボタン・ヘッダー・リンクに使う
+   ・注意してほしいところは黄色、エラーは赤、成功は緑で表す
+   ===================================================================== */
+
+
+/* ---------------------------------------------------------------------
+   1. 基本
+   --------------------------------------------------------------------- */
+
+/* 幅と高さに、余白（padding）と線（border）を含めて計算する。
+   幅を指定したときに、はみ出しにくくするための定番の設定 */
 * { box-sizing: border-box; }
 
+/* 画面全体の文字と背景 */
 body {
   margin: 0;
   font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
   font-size: 16px;
   line-height: 1.7;
   color: #333;
-  background: #f6f5f2;
+  background: #f6f5f2;   /* 真っ白より目が疲れにくい、少し温かみのある灰色 */
 }
 
+/* リンクの色（基本の色に合わせる） */
 a { color: #7a2e3a; }
 
+/* 画面の中身の幅。広い画面でも 1000px より広がらず、中央に寄せる */
 .container {
   max-width: 1000px;
   margin: 0 auto;
   padding: 24px 16px;
 }
 
+/* 見出し。h1 は画面のタイトル、h2 は画面の中の区切り（「明細」「中身」など） */
 h1 { font-size: 1.5rem; margin: 0 0 16px; }
+h2 { font-size: 1.2rem; margin: 24px 0 8px; }
 
-/* ===== ヘッダー・メニュー ===== */
+
+/* ---------------------------------------------------------------------
+   2. ヘッダー・メニュー・フッター（includes/layout/ の共通部分）
+   --------------------------------------------------------------------- */
+
+/* 画面のいちばん上の帯（アプリ名と、ログイン中のユーザー名） */
 .site-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between;   /* アプリ名を左、ユーザー名を右に */
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: wrap;                  /* 画面が狭いときは折り返す */
   gap: 8px;
   padding: 12px 16px;
   background: #7a2e3a;
@@ -35,10 +59,11 @@ h1 { font-size: 1.5rem; margin: 0 0 16px; }
 .user-info { display: flex; align-items: center; gap: 12px; }
 .user-info form { margin: 0; }
 
+/* 共通メニュー（商品一覧・箱一覧・…） */
 .site-nav { background: #fff; border-bottom: 1px solid #ddd; }
 .site-nav ul {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: wrap;        /* 画面が狭いときは、メニューを折り返す */
   max-width: 1000px;
   margin: 0 auto;
   padding: 0 8px;
@@ -50,23 +75,88 @@ h1 { font-size: 1.5rem; margin: 0 0 16px; }
   text-decoration: none;
   color: #333;
 }
+/* 今開いている画面のメニューに、下線を付けて目立たせる（nav.php が付ける） */
 .site-nav a.is-current { border-bottom: 3px solid #7a2e3a; font-weight: bold; }
 
+/* 画面のいちばん下 */
 .site-footer { text-align: center; padding: 24px; color: #888; }
 
-/* ===== メッセージ ===== */
-.flash { padding: 10px 14px; border-radius: 4px; }
-.flash-success { background: #e6f4ea; color: #1e6b34; }
-.flash-error   { background: #fde8e8; color: #9b1c1c; }
 
-/* ===== 表 ===== */
+/* ---------------------------------------------------------------------
+   3. メッセージ
+   --------------------------------------------------------------------- */
+
+/* 登録の完了やエラーのメッセージ（header.php のフラッシュメッセージなど） */
+.flash { padding: 10px 14px; border-radius: 4px; }
+.flash-success { background: #e6f4ea; color: #1e6b34; }   /* 成功：緑 */
+.flash-error   { background: #fde8e8; color: #9b1c1c; }   /* エラー：赤 */
+
+/* 「よろしいですか？」の確認（商品の廃番、拠点の停止、箱の廃止など） */
+.confirm-box {
+  margin: 16px 0;
+  padding: 16px;
+  background: #fff8e6;
+  border: 1px solid #e6c46b;
+  border-radius: 4px;
+}
+
+/* 注意してほしいこと（例：所属拠点以外の拠点に入庫するとき） */
+.warning-box {
+  padding: 10px 14px;
+  background: #fff3cd;
+  border-left: 4px solid #e0a800;
+}
+
+/* 表の下などに添える、小さな補足の文字 */
+.note { font-size: 0.9rem; color: #666; }
+
+
+/* ---------------------------------------------------------------------
+   4. 表
+   --------------------------------------------------------------------- */
+
+/* 表を囲む枠。画面より表が広いときは、表だけを横にスクロールできるようにする */
 .table-wrap { overflow-x: auto; }
+
 table { width: 100%; border-collapse: collapse; background: #fff; }
 th, td { padding: 8px 10px; border-bottom: 1px solid #e5e5e5; text-align: left; }
-th { background: #f0eeea; white-space: nowrap; }
 
-/* ===== フォーム・ボタン ===== */
+/* 見出しは中央揃え。勝手に折り返さない（改行したいときは <br> を入れる） */
+th { background: #f0eeea; white-space: nowrap; text-align: center; }
+
+/* 数のセルは右揃え（桁が揃って、大きさを見比べやすい）。td に class="num" を付ける */
+td.num { text-align: right; }
+
+/* 見出しが左の列にある表（商品詳細の情報、確認画面など）。見出しは左揃えにする */
+.detail-table { max-width: 600px; }
+.detail-table th { width: 8em; text-align: left; }
+
+/* 小計・合計の行（商品詳細の在庫、箱詳細の中身） */
+.subtotal-row td { font-weight: bold; background: #faf9f6; }
+
+/* 箱一覧の「箱なし」の行。普通の箱と見分けられるよう、薄い青にする */
+.loose-row td { background: #eef5fb; }
+
+/* 停止中・廃止など、今は使っていないものの行（拠点一覧など）。
+   ボタンは押せるように、半透明にはせず、文字と背景の色だけを変える */
+.is-inactive td { color: #999; background: #f3f3f3; }
+
+/* 確認画面で、間違えやすい項目の行を目立たせる（商品登録の「対象」） */
+.emphasis-row th,
+.emphasis-row td {
+  background: #fff3cd;
+  font-weight: bold;
+}
+.emphasis-row th { border-left: 4px solid #e0a800; }
+.emphasis-note { font-size: 0.85rem; font-weight: normal; color: #8a6d00; }
+
+
+/* ---------------------------------------------------------------------
+   5. フォーム
+   --------------------------------------------------------------------- */
+
 label { display: block; margin-bottom: 4px; font-weight: bold; }
+
 input, select, textarea {
   width: 100%;
   max-width: 400px;
@@ -75,28 +165,15 @@ input, select, textarea {
   border: 1px solid #ccc;
   border-radius: 4px;
 }
+textarea { max-width: 600px; }
+
+/* 入力欄1つ分のまとまり（ラベル＋入力欄＋エラー） */
 .form-row { margin-bottom: 16px; }
+
+/* 入力欄の下に出す、項目ごとのエラー（field_error() が出力する） */
 .field-error { color: #9b1c1c; font-size: 0.9rem; margin: 4px 0 0; }
 
-button, .button {
-  display: inline-block;
-  padding: 8px 18px;
-  font-size: 1rem;
-  color: #fff;
-  background: #7a2e3a;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  text-decoration: none;
-}
-.button-secondary { background: #888; }
-.button-link {
-  padding: 0;
-  color: inherit;
-  background: none;
-  text-decoration: underline;
-}
-
+/* 一覧画面の検索フォーム。条件を横に並べ、入りきらなければ折り返す */
 .search-form {
   display: flex;
   flex-wrap: wrap;
@@ -108,35 +185,53 @@ button, .button {
 }
 .search-form .form-row { margin-bottom: 0; }
 .search-form input[type="text"],
-.search-form select { width: auto; }
+.search-form select,
 .search-form input[type="checkbox"] { width: auto; }
 
-th { text-align: center; }
-td.num { text-align: right; }
-
-.detail-table { max-width: 600px; }
-.detail-table th { width: 8em; text-align: left; }
-.subtotal-row td { font-weight: bold; background: #faf9f6; }
-.button-row { display: flex; flex-wrap: wrap; gap: 8px; }
-h2 { font-size: 1.2rem; margin: 24px 0 8px; }
-
-.emphasis-row th,
-.emphasis-row td {
-  background: #fff3cd;
-  font-weight: bold;
+/* 入庫・出庫などの明細の1行。商品・保管場所・数量・削除ボタンを横に並べる */
+.line-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px;
+  background: #fff;
 }
-.emphasis-row th { border-left: 4px solid #e0a800; }
-.emphasis-note { font-size: 0.85rem; font-weight: normal; color: #8a6d00; }
+.line-row select { max-width: 320px; }
+.line-row input[type="number"] { width: 6em; }
+/* 行のエラーは、入力欄の下に1行使って表示する */
+.line-row .field-error { flex-basis: 100%; margin: 0; }
 
-.confirm-box {
-  margin: 16px 0;
-  padding: 16px;
-  background: #fff8e6;
-  border: 1px solid #e6c46b;
+
+/* ---------------------------------------------------------------------
+   6. ボタン
+   --------------------------------------------------------------------- */
+
+/* 基本のボタン。<button> と、ボタンのように見せたいリンク（class="button"）の両方に使う */
+button, .button {
+  display: inline-block;
+  padding: 8px 18px;
+  font-size: 1rem;
+  color: #fff;
+  background: #7a2e3a;
+  border: none;
   border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
 }
+
+/* 2番目に大事なボタン（キャンセル、入力に戻る、編集する など） */
+.button-secondary { background: #888; }
+
+/* リンクのように見せるボタン（ヘッダーのログアウト） */
+.button-link {
+  padding: 0;
+  color: inherit;
+  background: none;
+  text-decoration: underline;
+}
+
+/* ボタンを横に並べる。フォームの中のボタンも、同じ行に並ぶようにする */
+.button-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .button-row form { margin: 0; }
-
-.loose-row td { background: #eef5fb; }
-
-.is-inactive td { color: #999; background: #f3f3f3; }
