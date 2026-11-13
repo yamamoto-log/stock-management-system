@@ -336,27 +336,7 @@ require __DIR__ . '/../../includes/layout/header.php';
             </p>
         </form>
 
-        <script>
-            const lines = document.getElementById('lines');
-            const template = document.getElementById('line-template');
-
-            document.getElementById('add-line').addEventListener('click', () => {
-                lines.appendChild(template.content.cloneNode(true));
-            });
-
-            lines.addEventListener('click', (event) => {
-                if (!event.target.classList.contains('remove-line')) {
-                    return;
-                }
-                const row = event.target.closest('.line-row');
-                if (lines.querySelectorAll('.line-row').length > 1) {
-                    row.remove();
-                } else {
-                    row.querySelector('select').value = '';
-                    row.querySelector('input[name="qty[]"]').value = '';
-                }
-            });
-        </script>
+        <script src="/assets/js/lines.js"></script>
     <?php endif; ?>
 <?php endif; ?>
 

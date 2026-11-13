@@ -338,29 +338,7 @@ require __DIR__ . '/../../includes/layout/header.php';
         </p>
     </form>
 
-    <script>
-        // 行の追加と削除
-        const lines = document.getElementById('lines');
-        const template = document.getElementById('line-template');
-
-        document.getElementById('add-line').addEventListener('click', () => {
-            lines.appendChild(template.content.cloneNode(true));
-        });
-
-        lines.addEventListener('click', (event) => {
-            if (!event.target.classList.contains('remove-line')) {
-                return;
-            }
-            const row = event.target.closest('.line-row');
-            if (lines.querySelectorAll('.line-row').length > 1) {
-                row.remove();
-            } else {
-                // 最後の1行は消さずに、中身だけ空にする
-                row.querySelector('select[name="product_id[]"]').value = '';
-                row.querySelector('input[name="qty[]"]').value = '';
-            }
-        });
-    </script>
+    <script src="/assets/js/lines.js"></script>
 <?php endif; ?>
 
 <?php require __DIR__ . '/../../includes/layout/footer.php'; ?>
