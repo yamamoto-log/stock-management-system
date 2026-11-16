@@ -276,7 +276,7 @@ require __DIR__ . '/../../includes/layout/header.php';
             <p class="flash flash-error">入力内容に誤りがあります。</p>
         <?php endif; ?>
 
-        <form method="post">
+        <form method="post" novalidate>
             <?= csrf_field() ?>
 
             <h2>明細</h2>

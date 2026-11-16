@@ -312,7 +312,7 @@ require __DIR__ . '/../../includes/layout/header.php';
             <p class="flash flash-error">入力内容に誤りがあります。</p>
         <?php endif; ?>
 
-        <form method="post">
+        <form method="post" novalidate>
             <?= csrf_field() ?>
 
             <h2>明細（<?= h($modes[$mode]) ?>）</h2>
@@ -341,7 +341,8 @@ require __DIR__ . '/../../includes/layout/header.php';
                                 <?php endforeach; ?>
                             </select>
                         <?php endif; ?>
-                        <input type="number" name="qty[]" min="1" value="<?= h($line['qty']) ?>" placeholder="数量">
+                        <input type="number" name="qty[]" min="1" <?= $isIncrease ? 'max="9999"' : '' ?>
+                            value="<?= h($line['qty']) ?>" placeholder="数量">
                         <button type="button" class="button-secondary remove-line">削除</button>
                         <?php if (isset($errors['line'][$i])): ?>
                             <p class="field-error"><?= h($errors['line'][$i]) ?></p>
@@ -374,7 +375,7 @@ require __DIR__ . '/../../includes/layout/header.php';
                             <?php endforeach; ?>
                         </select>
                     <?php endif; ?>
-                    <input type="number" name="qty[]" min="1" placeholder="数量">
+                    <input type="number" name="qty[]" min="1" <?= $isIncrease ? 'max="9999"' : '' ?> placeholder="数量">
                     <button type="button" class="button-secondary remove-line">削除</button>
                 </div>
             </template>
