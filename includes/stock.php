@@ -147,18 +147,20 @@ function remove_stock(PDO $pdo, int $boxId, int $productId, int $qty, string $la
 
 /**
  * 操作の記録を追加して、その ID を返す
+ * status は移動（item_transfer / box_transfer）のときだけ指定する
  */
 function create_operation(PDO $pdo, array $data): int
 {
     $stmt = $pdo->prepare(
-        'INSERT INTO operations (type, user_id, from_location_id, to_location_id, reason, note)
-         VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO operations (type, user_id, from_location_id, to_location_id, status, reason, note)
+         VALUES (?, ?, ?, ?, ?, ?, ?)'
     );
     $stmt->execute([
         $data['type'],
         $data['user_id'],
         $data['from_location_id'] ?? null,
         $data['to_location_id'] ?? null,
+        $data['status'] ?? null,
         $data['reason'] ?? null,
         $data['note'] ?? null,
     ]);
@@ -175,4 +177,28 @@ function add_operation_item(PDO $pdo, int $operationId, int $productId, int $qty
          VALUES (?, ?, ?, ?, ?)'
     );
     $stmt->execute([$operationId, $productId, $qty, $fromBoxId, $toBoxId]);
+}
+
+/**
+ * 拠点の箱なし用の箱の ID を返す
+ */
+function loose_box_id(PDO $pdo, int $locationId): int
+{
+    $stmt = $pdo->prepare('SELECT id FROM boxes WHERE loose_location_id = ?');
+    $stmt->execute([$locationId]);
+    $id = $stmt->fetchColumn();
+    if ($id === false) {
+        throw new StockException('拠点の箱なしが見つかりません。管理者に連絡してください。');
+    }
+    return (int)$id;
+}
+
+/**
+ * 箱が、その拠点の使用中の箱かどうか（ロックはしない）
+ */
+function box_is_usable(PDO $pdo, int $boxId, int $locationId): bool
+{
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM boxes WHERE id = ? AND location_id = ? AND status = 'active'");
+    $stmt->execute([$boxId, $locationId]);
+    return (int)$stmt->fetchColumn() > 0;
 }
