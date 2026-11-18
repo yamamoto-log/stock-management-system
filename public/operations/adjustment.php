@@ -35,6 +35,27 @@ if ($isIncrease) {
     $stockOptions = stock_options($pdo, $locationId);
 }
 
+// 関連する移動の候補（この拠点が関係する、受取済の商品移動。新しい50件）
+$stmt = $pdo->prepare(
+    "SELECT o.id, o.received_at, fl.name AS from_name, tl.name AS to_name
+     FROM operations o
+     JOIN locations fl ON fl.id = o.from_location_id
+     JOIN locations tl ON tl.id = o.to_location_id
+     WHERE o.type = 'item_transfer' AND o.status = 'received'
+       AND (o.from_location_id = ? OR o.to_location_id = ?)
+     ORDER BY o.id DESC
+     LIMIT 50"
+);
+$stmt->execute([$locationId, $locationId]);
+$relatedOptions = [];
+foreach ($stmt->fetchAll() as $row) {
+    $relatedOptions[(int)$row['id']] = '#' . $row['id'] . '　' . $row['from_name'] . ' → ' . $row['to_name']
+        . '（' . date('n/j', strtotime($row['received_at'])) . ' 受取）';
+}
+
+// 移動詳細の「在庫調整する」から開いたとき
+$startRelatedId = (int)($_GET['related_operation_id'] ?? 0);
+
 // ---------------------------------------------------------------
 // 2. 入力値のチェック
 // ---------------------------------------------------------------
@@ -104,7 +125,7 @@ $showConfirm = false;
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     form_clear($formKey);
-    $input = ['lines' => [$emptyLine], 'note' => ''];
+    $input = ['lines' => [$emptyLine], 'note' => '', 'related_operation_id' => isset($relatedOptions[$startRelatedId]) ? (string)$startRelatedId : '',];
 } else {
     verify_csrf();
 
@@ -140,8 +161,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             }
         }
 
-        $input  = ['lines' => $lines, 'note' => trim($_POST['note'] ?? '')];
+        $input  = [
+            'lines'                => $lines,
+            'note'                 => trim($_POST['note'] ?? ''),
+            'related_operation_id' => (string)($_POST['related_operation_id'] ?? ''),
+        ];
         $errors = validate_adjustment($input, $isIncrease, $validateOptions);
+        if ($input['related_operation_id'] !== '' && !isset($relatedOptions[(int)$input['related_operation_id']])) {
+            $errors['related_operation_id'] = '関連する移動の選択が正しくありません。';
+        }
         if (empty($errors)) {
             form_save($formKey, $input);
             $showConfirm = true;
@@ -149,7 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $input['lines'][] = $emptyLine;
         }
     } elseif ($step === 'back') {
-        $input = form_load($formKey) ?? ['lines' => [$emptyLine], 'note' => ''];
+        $input = form_load($formKey) ?? ['lines' => [$emptyLine], 'note' => '', 'related_operation_id' => ''];
     } elseif ($step === 'commit') {
         $input = form_load($formKey);
         if ($input === null) {
@@ -166,6 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                 'from_location_id' => $locationId,
                 'to_location_id'   => $locationId,
                 'note'             => $input['note'],
+                'related_operation_id' => $input['related_operation_id'] !== '' ? (int)$input['related_operation_id'] : null,
             ]);
 
             foreach ($input['lines'] as $line) {
@@ -300,6 +329,9 @@ require __DIR__ . '/../../includes/layout/header.php';
                 <?php endforeach; ?>
             </select>
         </div>
+        <?php if ($startRelatedId > 0): ?>
+            <input type="hidden" name="related_operation_id" value="<?= h((string)$startRelatedId) ?>">
+        <?php endif; ?>
         <button type="submit" class="button-secondary">切り替える</button>
         <span class="note">※ 切り替えると、入力中の明細は消えます。</span>
     </form>
@@ -381,10 +413,29 @@ require __DIR__ . '/../../includes/layout/header.php';
             </template>
 
             <div class="form-row">
+                <label for="related_operation_id">関連する移動（任意）</label>
+                <select id="related_operation_id" name="related_operation_id">
+                    <option value="">なし</option>
+                    <?php foreach ($relatedOptions as $id => $text): ?>
+                        <option value="<?= h((string)$id) ?>" <?= (string)$id === $input['related_operation_id'] ? 'selected' : '' ?>><?= h($text) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <p class="note">検品で数が合わなかったときなど、移動の差異を直す場合に選びます。</p>
+                <?= field_error($errors, 'related_operation_id') ?>
+            </div>
+
+            <div class="form-row">
                 <label for="note">理由（必須）</label>
                 <textarea id="note" name="note" rows="3" placeholder="例：棚卸しで数え直したところ、記録より1枚多かった"><?= h($input['note']) ?></textarea>
                 <?= field_error($errors, 'note') ?>
             </div>
+
+            <?php if ($input['related_operation_id'] !== ''): ?>
+                <tr>
+                    <th>関連する移動</th>
+                    <td><?= h($relatedOptions[(int)$input['related_operation_id']] ?? '') ?></td>
+                </tr>
+            <?php endif; ?>
 
             <p class="button-row">
                 <button type="submit" name="step" value="confirm">確認する</button>

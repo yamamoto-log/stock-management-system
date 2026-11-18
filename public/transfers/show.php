@@ -270,6 +270,18 @@ require __DIR__ . '/../../includes/layout/header.php';
     </table>
 </div>
 
+<?php if ($isReceived): ?>
+    <p class="note">
+        検品で数が合わなかったときは、この移動に関連づけて在庫調整をしてください：
+        <a href="/operations/adjustment.php?location_id=<?= h((string)$transfer['to_location_id']) ?>&related_operation_id=<?= h((string)$operationId) ?>">
+            <?= h($transfer['to_name']) ?>の在庫を調整する
+        </a> ／
+        <a href="/operations/adjustment.php?location_id=<?= h((string)$transfer['from_location_id']) ?>&related_operation_id=<?= h((string)$operationId) ?>">
+            <?= h($transfer['from_name']) ?>の在庫を調整する
+        </a>
+    </p>
+<?php endif; ?>
+
 <p><a href="/transfers/">移動一覧に戻る</a></p>
 
 <?php require __DIR__ . '/../../includes/layout/footer.php'; ?>

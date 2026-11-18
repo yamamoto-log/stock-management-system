@@ -152,8 +152,9 @@ function remove_stock(PDO $pdo, int $boxId, int $productId, int $qty, string $la
 function create_operation(PDO $pdo, array $data): int
 {
     $stmt = $pdo->prepare(
-        'INSERT INTO operations (type, user_id, from_location_id, to_location_id, status, reason, note)
-         VALUES (?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO operations
+            (type, user_id, from_location_id, to_location_id, status, reason, note, related_operation_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     );
     $stmt->execute([
         $data['type'],
@@ -163,6 +164,7 @@ function create_operation(PDO $pdo, array $data): int
         $data['status'] ?? null,
         $data['reason'] ?? null,
         $data['note'] ?? null,
+        $data['related_operation_id'] ?? null,
     ]);
     return (int)$pdo->lastInsertId();
 }
