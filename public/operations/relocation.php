@@ -110,6 +110,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     ];
     $qtyInputs = array_map('strval', $items);   // 移す数の初期値は残数
 
+    // 移動詳細から開いたときは、届いた数を移す数の初期値にする（残数を超えない範囲）
+    $startQty = (int)($_GET['qty'] ?? 0);
+    if ($startProductId > 0 && $startQty > 0 && isset($items[$startProductId])) {
+        $qtyInputs[$startProductId] = (string)min($startQty, $items[$startProductId]);
+    }
+
 } else {
     verify_csrf();
 
