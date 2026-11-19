@@ -220,6 +220,8 @@ function add_operation_box(PDO $pdo, int $operationId, int $boxId): void
  */
 function transfer_summaries(PDO $pdo, array $ids): array
 {
+    // 重複を除き、キーを 0, 1, 2, … に振り直す（execute() は 0 から順のキーを前提にする）
+    $ids = array_values(array_unique($ids));
     if (empty($ids)) {
         return [];
     }
