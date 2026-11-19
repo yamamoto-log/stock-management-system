@@ -184,7 +184,9 @@ require __DIR__ . '/../../includes/layout/header.php';
                     <td><?= $t['type'] === 'box_transfer' ? '箱ごと' : '商品' ?></td>
                     <td><?= h(date('Y/m/d H:i', strtotime($t['created_at']))) ?></td>
                     <td><?= h($t['from_name']) ?> → <?= h($t['to_name']) ?></td>
-                    <td><?= h($summaries[(int)$t['id']] ?? '') ?></td>
+                    <td>
+                        <a href="/transfers/show.php?id=<?= h((string)$t['id']) ?>"><?= h($summaries[(int)$t['id']] ?? '') ?></a>
+                    </td>
                     <td>
                         <?= h(label('transfer', $t['status'])) ?>
                         <?php if ($isIncoming): ?><br><strong class="emphasis-note">受取待ち</strong><?php endif; ?>
