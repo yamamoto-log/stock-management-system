@@ -10,7 +10,7 @@ $operationId = (int)($_GET['id'] ?? 0);
 $backTo      = '/transfers/show.php?id=' . $operationId;
 
 // ---------------------------------------------------------------
-// 1. 移動を取り出す（今は商品移動だけ。箱ごと移動は Issue 12 で追加）
+// 1. 移動を取り出す（★ 商品移動と箱ごと移動の両方）
 // ---------------------------------------------------------------
 function load_transfer(PDO $pdo, int $operationId)
 {
@@ -24,7 +24,7 @@ function load_transfer(PDO $pdo, int $operationId)
          JOIN users u       ON u.id  = o.user_id
          LEFT JOIN users ru ON ru.id = o.received_by
          LEFT JOIN users cu ON cu.id = o.cancelled_by
-         WHERE o.id = ? AND o.type = 'item_transfer'"
+         WHERE o.id = ? AND o.type IN ('item_transfer', 'box_transfer')"
     );
     $stmt->execute([$operationId]);
     return $stmt->fetch();
@@ -41,6 +41,8 @@ if ($transfer === false) {
     require __DIR__ . '/../../includes/layout/footer.php';
     exit;
 }
+
+$isBoxTransfer = $transfer['type'] === 'box_transfer';   // ★
 
 // ---------------------------------------------------------------
 // 2. 受取確認・取消（POST で受け付ける）
@@ -68,52 +70,80 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $pdo->prepare(
                     "UPDATE operations
                         SET status = 'received', received_by = ?, received_at = NOW()
-                      WHERE id = ? AND type = 'item_transfer' AND status = 'in_transit'"
+                      WHERE id = ? AND type IN ('item_transfer', 'box_transfer') AND status = 'in_transit'"
                 );
             } else {
                 $stmt = $pdo->prepare(
                     "UPDATE operations
                         SET status = 'cancelled', cancelled_by = ?, cancelled_at = NOW()
-                      WHERE id = ? AND type = 'item_transfer' AND status = 'in_transit'"
+                      WHERE id = ? AND type IN ('item_transfer', 'box_transfer') AND status = 'in_transit'"
                 );
             }
             $stmt->execute([$user['id'], $operationId]);
 
             if ($stmt->rowCount() === 0) {
-                // すでに受取済か取消済だった（ほかの人が先に操作した、または二度押し）
                 throw new StockException('この移動はすでに受取済か取消済です。画面の状態を確認してください。');
             }
 
-            // ② 明細を取り出す
-            $stmt = $pdo->prepare('SELECT id, product_id, qty, from_box_id FROM operation_items WHERE operation_id = ?');
-            $stmt->execute([$operationId]);
-            $items = $stmt->fetchAll();
+            if ($isBoxTransfer) {
+                // ★ ②-箱ごと移動：箱の状態と所属拠点を変えるだけ。中身は動かさない
+                $stmt = $pdo->prepare('SELECT box_id FROM operation_boxes WHERE operation_id = ? ORDER BY box_id');
+                $stmt->execute([$operationId]);
+                $boxIds = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
 
-            if ($action === 'receive') {
-                // ③-受取：送り先の箱なしへ加え、明細に送り先の保管場所を書き込む
-                $looseBoxId = loose_box_id($pdo, (int)$transfer['to_location_id']);
-                lock_box($pdo, $looseBoxId, (int)$transfer['to_location_id']);
-
-                foreach ($items as $item) {
-                    add_stock($pdo, $looseBoxId, (int)$item['product_id'], (int)$item['qty']);
-                    $pdo->prepare('UPDATE operation_items SET to_box_id = ? WHERE id = ?')
-                        ->execute([$looseBoxId, $item['id']]);
-                }
-                $message = '受取確認をしました。商品は' . $transfer['to_name'] . 'の箱なしに入りました。';
-            } else {
-                // ③-取消：送り元の保管場所へ戻す。使えない箱なら、送り元の箱なしへ戻す
-                $fromLocationId = (int)$transfer['from_location_id'];
-                $looseBoxId     = loose_box_id($pdo, $fromLocationId);
-
-                foreach ($items as $item) {
-                    $boxId = (int)$item['from_box_id'];
-                    if (!box_is_usable($pdo, $boxId, $fromLocationId)) {
-                        $boxId = $looseBoxId;
+                foreach ($boxIds as $boxId) {
+                    if ($action === 'receive') {
+                        $stmt = $pdo->prepare(
+                            "UPDATE boxes SET location_id = ?, status = 'active'
+                              WHERE id = ? AND status = 'in_transit'"
+                        );
+                        $stmt->execute([(int)$transfer['to_location_id'], $boxId]);
+                    } else {
+                        $stmt = $pdo->prepare(
+                            "UPDATE boxes SET status = 'active'
+                              WHERE id = ? AND status = 'in_transit'"
+                        );
+                        $stmt->execute([$boxId]);
                     }
-                    lock_box($pdo, $boxId, $fromLocationId);
-                    add_stock($pdo, $boxId, (int)$item['product_id'], (int)$item['qty']);
+                    if ($stmt->rowCount() === 0) {
+                        throw new StockException(box_code($boxId) . ' が輸送中になっていません。管理者に連絡してください。');
+                    }
                 }
-                $message = '発送を取り消しました。商品は' . $transfer['from_name'] . 'に戻りました。';
+                $message = $action === 'receive'
+                    ? '受取確認をしました。箱は中身ごと' . $transfer['to_name'] . 'の所属になりました。'
+                    : '発送を取り消しました。箱は' . $transfer['from_name'] . 'で使用中に戻りました。';
+            } else {
+                // ②-商品移動：明細を取り出す
+                $stmt = $pdo->prepare('SELECT id, product_id, qty, from_box_id FROM operation_items WHERE operation_id = ?');
+                $stmt->execute([$operationId]);
+                $items = $stmt->fetchAll();
+
+                if ($action === 'receive') {
+                    // ③-受取：送り先の箱なしへ加え、明細に送り先の保管場所を書き込む
+                    $looseBoxId = loose_box_id($pdo, (int)$transfer['to_location_id']);
+                    lock_box($pdo, $looseBoxId, (int)$transfer['to_location_id']);
+
+                    foreach ($items as $item) {
+                        add_stock($pdo, $looseBoxId, (int)$item['product_id'], (int)$item['qty']);
+                        $pdo->prepare('UPDATE operation_items SET to_box_id = ? WHERE id = ?')
+                            ->execute([$looseBoxId, $item['id']]);
+                    }
+                    $message = '受取確認をしました。商品は' . $transfer['to_name'] . 'の箱なしに入りました。';
+                } else {
+                    // ③-取消：送り元の保管場所へ戻す。使えない箱なら、送り元の箱なしへ戻す
+                    $fromLocationId = (int)$transfer['from_location_id'];
+                    $looseBoxId     = loose_box_id($pdo, $fromLocationId);
+
+                    foreach ($items as $item) {
+                        $boxId = (int)$item['from_box_id'];
+                        if (!box_is_usable($pdo, $boxId, $fromLocationId)) {
+                            $boxId = $looseBoxId;
+                        }
+                        lock_box($pdo, $boxId, $fromLocationId);
+                        add_stock($pdo, $boxId, (int)$item['product_id'], (int)$item['qty']);
+                    }
+                    $message = '発送を取り消しました。商品は' . $transfer['from_name'] . 'に戻りました。';
+                }
             }
 
             $pdo->commit();
@@ -134,22 +164,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // ---------------------------------------------------------------
-// 3. 明細（送り元・送り先の保管場所の名前つき）
+// 3. 明細
 // ---------------------------------------------------------------
-$stmt = $pdo->prepare(
-    'SELECT oi.product_id, oi.qty, oi.from_box_id, oi.to_box_id,
-            fb.loose_location_id AS from_loose, tb.loose_location_id AS to_loose
-     FROM operation_items oi
-     LEFT JOIN boxes fb ON fb.id = oi.from_box_id
-     LEFT JOIN boxes tb ON tb.id = oi.to_box_id
-     WHERE oi.operation_id = ?
-     ORDER BY oi.id'
-);
-$stmt->execute([$operationId]);
-$lines    = $stmt->fetchAll();
 $products = product_options($pdo);
 
-// 廃番の商品も表示できるよう、名前がなければ商品コードを出す
+if ($isBoxTransfer) {
+    // ★ 箱ごとに、今の中身を取り出す
+    $stmt = $pdo->prepare(
+        'SELECT ob.box_id, s.product_id, s.qty
+         FROM operation_boxes ob
+         LEFT JOIN stocks s ON s.box_id = ob.box_id
+         WHERE ob.operation_id = ?
+         ORDER BY ob.box_id, s.product_id'
+    );
+    $stmt->execute([$operationId]);
+    $boxLines = [];
+    foreach ($stmt->fetchAll() as $row) {
+        $boxId = (int)$row['box_id'];
+        $boxLines[$boxId] ??= ['items' => [], 'total' => 0];
+        if ($row['product_id'] !== null) {
+            $productId = (int)$row['product_id'];
+            $boxLines[$boxId]['items'][] = [$products[$productId] ?? product_code($productId), (int)$row['qty']];
+            $boxLines[$boxId]['total']  += (int)$row['qty'];
+        }
+    }
+} else {
+    $stmt = $pdo->prepare(
+        'SELECT oi.product_id, oi.qty, oi.from_box_id, oi.to_box_id,
+                fb.loose_location_id AS from_loose, tb.loose_location_id AS to_loose
+         FROM operation_items oi
+         LEFT JOIN boxes fb ON fb.id = oi.from_box_id
+         LEFT JOIN boxes tb ON tb.id = oi.to_box_id
+         WHERE oi.operation_id = ?
+         ORDER BY oi.id'
+    );
+    $stmt->execute([$operationId]);
+    $lines = $stmt->fetchAll();
+}
+
 function storage_name(?int $boxId, $looseLocationId): string
 {
     if ($boxId === null) {
@@ -160,17 +212,22 @@ function storage_name(?int $boxId, $looseLocationId): string
 
 $isInTransit = $transfer['status'] === 'in_transit';
 $isReceived  = $transfer['status'] === 'received';
+$typeName    = $isBoxTransfer ? '箱ごと移動' : '商品移動';   // ★
 
 $pageTitle = '移動詳細';
 require __DIR__ . '/../../includes/layout/header.php';
 ?>
 
-<h2>移動 #<?= h((string)$operationId) ?>：<?= h($transfer['from_name']) ?> → <?= h($transfer['to_name']) ?></h2>
+<h2><?= h($typeName) ?> #<?= h((string)$operationId) ?>：<?= h($transfer['from_name']) ?> → <?= h($transfer['to_name']) ?></h2>
 
 <?php if ($confirmAction !== null): ?>
     <div class="confirm-box">
-        <?php if ($confirmAction === 'receive'): ?>
+        <?php if ($confirmAction === 'receive' && $isBoxTransfer): ?>
+            <p>検品は終わりましたか？　受取確認をすると、箱は中身ごと<?= h($transfer['to_name']) ?>の所属になります。</p>
+        <?php elseif ($confirmAction === 'receive'): ?>
             <p>検品は終わりましたか？　受取確認をすると、<?= h($transfer['to_name']) ?>の箱なしに商品が加わります。</p>
+        <?php elseif ($isBoxTransfer): ?>
+            <p>この発送を取り消しますか？　箱は<?= h($transfer['from_name']) ?>で使用中に戻ります。</p>
         <?php else: ?>
             <p>この発送を取り消しますか？　商品は<?= h($transfer['from_name']) ?>の元の保管場所に戻ります。</p>
         <?php endif; ?>
@@ -187,6 +244,10 @@ require __DIR__ . '/../../includes/layout/header.php';
 
 <div class="table-wrap">
     <table class="detail-table">
+        <tr>
+            <th>種類</th>
+            <td><?= h($typeName) ?></td>
+        </tr>
         <tr>
             <th>状態</th>
             <td><strong><?= h(label('transfer', $transfer['status'])) ?></strong></td>
@@ -239,36 +300,69 @@ require __DIR__ . '/../../includes/layout/header.php';
 <?php endif; ?>
 
 <h2>明細</h2>
-<div class="table-wrap">
-    <table>
-        <tr>
-            <th>商品</th>
-            <th>数量</th>
-            <th>送り元の<br>保管場所</th>
-            <th>送り先の<br>保管場所</th>
-            <?php if ($isReceived): ?><th>操作</th><?php endif; ?>
-        </tr>
-        <?php foreach ($lines as $line): ?>
+
+<?php if ($isBoxTransfer): ?>
+    <!-- ★ 箱ごと移動の明細 -->
+    <div class="table-wrap">
+        <table>
             <tr>
-                <td>
-                    <a href="/products/show.php?id=<?= h((string)$line['product_id']) ?>">
-                        <?= h($products[(int)$line['product_id']] ?? product_code((int)$line['product_id'])) ?>
-                    </a>
-                </td>
-                <td class="num"><?= h((string)$line['qty']) ?></td>
-                <td><?= h(storage_name($line['from_box_id'] !== null ? (int)$line['from_box_id'] : null, $line['from_loose'])) ?></td>
-                <td><?= h(storage_name($line['to_box_id'] !== null ? (int)$line['to_box_id'] : null, $line['to_loose'])) ?></td>
-                <?php if ($isReceived): ?>
+                <th>箱</th>
+                <th>中身（現在）</th>
+                <th>点数</th>
+            </tr>
+            <?php foreach ($boxLines as $boxId => $boxLine): ?>
+                <tr>
+                    <td><a href="/boxes/show.php?id=<?= h((string)$boxId) ?>"><?= h(box_code($boxId)) ?></a></td>
                     <td>
-                        <a href="/operations/relocation.php?box_id=<?= h((string)$line['to_box_id']) ?>&product_id=<?= h((string)$line['product_id']) ?>&qty=<?= h((string)$line['qty']) ?>">
-                            保管場所変更
+                        <?php if (empty($boxLine['items'])): ?>
+                            （空）
+                        <?php else: ?>
+                            <?php foreach ($boxLine['items'] as [$name, $qty]): ?>
+                                <?= h($name) ?> ×<?= h((string)$qty) ?><br>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </td>
+                    <td class="num"><?= h((string)$boxLine['total']) ?></td>
+                </tr>
+            <?php endforeach; ?>
+        </table>
+    </div>
+    <?php if (!$isInTransit): ?>
+        <p class="note">※ 中身は、今の箱の中身です。受取後や取消後に入れ替えた場合は、発送したときの中身と異なります。</p>
+    <?php endif; ?>
+
+<?php else: ?>
+    <div class="table-wrap">
+        <table>
+            <tr>
+                <th>商品</th>
+                <th>数量</th>
+                <th>送り元の<br>保管場所</th>
+                <th>送り先の<br>保管場所</th>
+                <?php if ($isReceived): ?><th>操作</th><?php endif; ?>
+            </tr>
+            <?php foreach ($lines as $line): ?>
+                <tr>
+                    <td>
+                        <a href="/products/show.php?id=<?= h((string)$line['product_id']) ?>">
+                            <?= h($products[(int)$line['product_id']] ?? product_code((int)$line['product_id'])) ?>
                         </a>
                     </td>
-                <?php endif; ?>
-            </tr>
-        <?php endforeach; ?>
-    </table>
-</div>
+                    <td class="num"><?= h((string)$line['qty']) ?></td>
+                    <td><?= h(storage_name($line['from_box_id'] !== null ? (int)$line['from_box_id'] : null, $line['from_loose'])) ?></td>
+                    <td><?= h(storage_name($line['to_box_id'] !== null ? (int)$line['to_box_id'] : null, $line['to_loose'])) ?></td>
+                    <?php if ($isReceived): ?>
+                        <td>
+                            <a href="/operations/relocation.php?box_id=<?= h((string)$line['to_box_id']) ?>&product_id=<?= h((string)$line['product_id']) ?>&qty=<?= h((string)$line['qty']) ?>">
+                                保管場所変更
+                            </a>
+                        </td>
+                    <?php endif; ?>
+                </tr>
+            <?php endforeach; ?>
+        </table>
+    </div>
+<?php endif; ?>
 
 <?php if ($isReceived): ?>
     <p class="note">

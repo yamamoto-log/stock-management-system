@@ -204,3 +204,12 @@ function box_is_usable(PDO $pdo, int $boxId, int $locationId): bool
     $stmt->execute([$boxId, $locationId]);
     return (int)$stmt->fetchColumn() > 0;
 }
+
+/**
+ * 箱ごと移動で送った箱を記録する
+ */
+function add_operation_box(PDO $pdo, int $operationId, int $boxId): void
+{
+    $pdo->prepare('INSERT INTO operation_boxes (operation_id, box_id) VALUES (?, ?)')
+        ->execute([$operationId, $boxId]);
+}

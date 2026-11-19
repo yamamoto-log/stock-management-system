@@ -36,7 +36,7 @@ if (!array_key_exists($relation, $relations)) {
 // ---------------------------------------------------------------
 // 2. 一覧を取り出す（今は商品移動だけ。箱ごと移動は Issue 12 で追加）
 // ---------------------------------------------------------------
-$where  = ["o.type = 'item_transfer'"];
+$where  = ["o.type IN ('item_transfer', 'box_transfer')"];
 $params = [];
 
 if ($status !== '') {
@@ -56,7 +56,7 @@ if ($relation === 'mine') {
 }
 
 $stmt = $pdo->prepare(
-    'SELECT o.id, o.created_at, o.status, o.from_location_id, o.to_location_id,
+    'SELECT o.id, o.type, o.created_at, o.status, o.from_location_id, o.to_location_id,
             fl.name AS from_name, tl.name AS to_name, u.name AS user_name
      FROM operations o
      JOIN locations fl ON fl.id = o.from_location_id
@@ -94,12 +94,32 @@ if (!empty($transfers)) {
         }
         $summaries[$opId] = $text;
     }
+    // 箱ごと移動の内容（「BOX-0004 ほか1箱」）
+    $stmt = $pdo->prepare(
+        "SELECT operation_id, box_id
+         FROM operation_boxes
+         WHERE operation_id IN ($placeholders)
+         ORDER BY box_id"
+    );
+    $stmt->execute($ids);
+
+    $boxesByOp = [];
+    foreach ($stmt->fetchAll() as $row) {
+        $boxesByOp[(int)$row['operation_id']][] = (int)$row['box_id'];
+    }
+    foreach ($boxesByOp as $opId => $boxIds) {
+        $text = box_code($boxIds[0]);
+        if (count($boxIds) > 1) {
+            $text .= ' ほか' . (count($boxIds) - 1) . '箱';
+        }
+        $summaries[$opId] = $text;
+    }
 }
 
 // 所属拠点の受取待ちの件数
 $stmt = $pdo->prepare(
     "SELECT COUNT(*) FROM operations
-     WHERE type = 'item_transfer' AND status = 'in_transit' AND to_location_id = ?"
+     WHERE type IN ('item_transfer', 'box_transfer') AND status = 'in_transit' AND to_location_id = ?"
 );
 $stmt->execute([$myLoc]);
 $waitingCount = (int)$stmt->fetchColumn();
@@ -136,6 +156,7 @@ require __DIR__ . '/../../includes/layout/header.php';
     <button type="submit">検索</button>
     <a href="/transfers/?status=&relation=" class="button button-secondary">すべて表示</a>
     <a href="/operations/item_transfer.php" class="button">商品を発送する</a>
+    <a href="/operations/box_transfer.php" class="button">箱を発送する</a>
 </form>
 
 <p><?= count($transfers) ?> 件<?= count($transfers) === 200 ? '（新しい200件まで表示）' : '' ?></p>
@@ -147,6 +168,7 @@ require __DIR__ . '/../../includes/layout/header.php';
         <table>
             <tr>
                 <th>移動</th>
+                <th>種類</th>
                 <th>発送日時</th>
                 <th>送り元 → 送り先</th>
                 <th>内容</th>
@@ -159,9 +181,12 @@ require __DIR__ . '/../../includes/layout/header.php';
                 ?>
                 <tr class="<?= $t['status'] === 'cancelled' ? 'is-inactive' : '' ?>">
                     <td><a href="/transfers/show.php?id=<?= h((string)$t['id']) ?>">#<?= h((string)$t['id']) ?></a></td>
+                    <td><?= $t['type'] === 'box_transfer' ? '箱ごと' : '商品' ?></td>
                     <td><?= h(date('Y/m/d H:i', strtotime($t['created_at']))) ?></td>
                     <td><?= h($t['from_name']) ?> → <?= h($t['to_name']) ?></td>
-                    <td><?= h($summaries[(int)$t['id']] ?? '') ?></td>
+                    <td>
+                        <a href="/transfers/show.php?id=<?= h((string)$t['id']) ?>"><?= h($summaries[(int)$t['id']] ?? '') ?></a>
+                    </td>
                     <td>
                         <?= h(label('transfer', $t['status'])) ?>
                         <?php if ($isIncoming): ?><br><strong class="emphasis-note">受取待ち</strong><?php endif; ?>
