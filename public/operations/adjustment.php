@@ -41,7 +41,7 @@ $stmt = $pdo->prepare(
      FROM operations o
      JOIN locations fl ON fl.id = o.from_location_id
      JOIN locations tl ON tl.id = o.to_location_id
-     WHERE o.type = 'item_transfer' AND o.status = 'received'
+     WHERE o.type IN ('item_transfer', 'box_transfer') AND o.status = 'received'
        AND (o.from_location_id = ? OR o.to_location_id = ?)
      ORDER BY o.id DESC
      LIMIT 50"
