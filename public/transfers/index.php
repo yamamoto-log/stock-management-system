@@ -69,52 +69,8 @@ $stmt = $pdo->prepare(
 $stmt->execute($params);
 $transfers = $stmt->fetchAll();
 
-// 各移動の内容（「訪問着 ×3 ほか1件」）を作るため、明細をまとめて取り出す
-$summaries = [];
-if (!empty($transfers)) {
-    $ids          = array_column($transfers, 'id');
-    $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $stmt = $pdo->prepare(
-        "SELECT oi.operation_id, p.name, oi.qty
-         FROM operation_items oi
-         JOIN products p ON p.id = oi.product_id
-         WHERE oi.operation_id IN ($placeholders)
-         ORDER BY oi.id"
-    );
-    $stmt->execute($ids);
-
-    $itemsByOp = [];
-    foreach ($stmt->fetchAll() as $row) {
-        $itemsByOp[(int)$row['operation_id']][] = $row;
-    }
-    foreach ($itemsByOp as $opId => $items) {
-        $text = $items[0]['name'] . ' ×' . $items[0]['qty'];
-        if (count($items) > 1) {
-            $text .= ' ほか' . (count($items) - 1) . '件';
-        }
-        $summaries[$opId] = $text;
-    }
-    // 箱ごと移動の内容（「BOX-0004 ほか1箱」）
-    $stmt = $pdo->prepare(
-        "SELECT operation_id, box_id
-         FROM operation_boxes
-         WHERE operation_id IN ($placeholders)
-         ORDER BY box_id"
-    );
-    $stmt->execute($ids);
-
-    $boxesByOp = [];
-    foreach ($stmt->fetchAll() as $row) {
-        $boxesByOp[(int)$row['operation_id']][] = (int)$row['box_id'];
-    }
-    foreach ($boxesByOp as $opId => $boxIds) {
-        $text = box_code($boxIds[0]);
-        if (count($boxIds) > 1) {
-            $text .= ' ほか' . (count($boxIds) - 1) . '箱';
-        }
-        $summaries[$opId] = $text;
-    }
-}
+// 各移動の内容（「訪問着 ×3 ほか1件」「BOX-0004 ほか1箱」）
+$summaries = transfer_summaries($pdo, array_column($transfers, 'id'));
 
 // 所属拠点の受取待ちの件数
 $stmt = $pdo->prepare(
