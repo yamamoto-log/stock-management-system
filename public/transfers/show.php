@@ -141,6 +141,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                         lock_box($pdo, $boxId, $fromLocationId);
                         add_stock($pdo, $boxId, (int)$item['product_id'], (int)$item['qty']);
+                        // ★ 戻した保管場所を記録する（記録と在庫を一致させるため）
+                        $pdo->prepare('UPDATE operation_items SET returned_box_id = ? WHERE id = ?')
+                            ->execute([$boxId, $item['id']]);
                     }
                     $message = '発送を取り消しました。商品は' . $transfer['from_name'] . 'に戻りました。';
                 }
@@ -190,11 +193,13 @@ if ($isBoxTransfer) {
     }
 } else {
     $stmt = $pdo->prepare(
-        'SELECT oi.product_id, oi.qty, oi.from_box_id, oi.to_box_id,
-                fb.loose_location_id AS from_loose, tb.loose_location_id AS to_loose
+        'SELECT oi.product_id, oi.qty, oi.from_box_id, oi.to_box_id, oi.returned_box_id,
+                fb.loose_location_id AS from_loose, tb.loose_location_id AS to_loose,
+                rb.loose_location_id AS returned_loose
          FROM operation_items oi
          LEFT JOIN boxes fb ON fb.id = oi.from_box_id
          LEFT JOIN boxes tb ON tb.id = oi.to_box_id
+         LEFT JOIN boxes rb ON rb.id = oi.returned_box_id
          WHERE oi.operation_id = ?
          ORDER BY oi.id'
     );
@@ -212,6 +217,7 @@ function storage_name(?int $boxId, $looseLocationId): string
 
 $isInTransit = $transfer['status'] === 'in_transit';
 $isReceived  = $transfer['status'] === 'received';
+$isCancelled = $transfer['status'] === 'cancelled';
 $typeName    = $isBoxTransfer ? '箱ごと移動' : '商品移動';   // ★
 
 $pageTitle = '移動詳細';
@@ -338,7 +344,7 @@ require __DIR__ . '/../../includes/layout/header.php';
                 <th>商品</th>
                 <th>数量</th>
                 <th>送り元の<br>保管場所</th>
-                <th>送り先の<br>保管場所</th>
+                <th><?= $isCancelled ? '戻した<br>保管場所' : '送り先の<br>保管場所' ?></th>
                 <?php if ($isReceived): ?><th>操作</th><?php endif; ?>
             </tr>
             <?php foreach ($lines as $line): ?>
@@ -350,7 +356,11 @@ require __DIR__ . '/../../includes/layout/header.php';
                     </td>
                     <td class="num"><?= h((string)$line['qty']) ?></td>
                     <td><?= h(storage_name($line['from_box_id'] !== null ? (int)$line['from_box_id'] : null, $line['from_loose'])) ?></td>
-                    <td><?= h(storage_name($line['to_box_id'] !== null ? (int)$line['to_box_id'] : null, $line['to_loose'])) ?></td>
+                    <?php if ($isCancelled): ?>
+                        <td><?= h(storage_name($line['returned_box_id'] !== null ? (int)$line['returned_box_id'] : null, $line['returned_loose'])) ?></td>
+                    <?php else: ?>
+                        <td><?= h(storage_name($line['to_box_id'] !== null ? (int)$line['to_box_id'] : null, $line['to_loose'])) ?></td>
+                    <?php endif; ?>
                     <?php if ($isReceived): ?>
                         <td>
                             <a href="/operations/relocation.php?box_id=<?= h((string)$line['to_box_id']) ?>&product_id=<?= h((string)$line['product_id']) ?>&qty=<?= h((string)$line['qty']) ?>">
