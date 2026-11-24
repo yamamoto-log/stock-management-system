@@ -1,12 +1,46 @@
 <?php
-// ログイン状態の確認
 
 /**
  * ログイン中のユーザー情報を返す（ログインしていなければ null）
+ * セッションの情報をそのまま信じず、毎回 DB で「まだ利用中か」を確かめる
  */
 function current_user(): ?array
 {
-    return $_SESSION['user'] ?? null;
+    // 同じ画面の中で何度呼ばれても、DB を見るのは1回だけにする
+    static $checked = false;
+    static $user    = null;
+    if ($checked) {
+        return $user;
+    }
+    $checked = true;
+
+    $sessionUser = $_SESSION['user'] ?? null;
+    if ($sessionUser === null) {
+        return null;
+    }
+
+    $stmt = getDb()->prepare(
+        "SELECT id, name, role, location_id FROM users WHERE id = ? AND status = 'active'"
+    );
+    $stmt->execute([$sessionUser['id']]);
+    $row = $stmt->fetch();
+
+    if ($row === false) {
+        // 停止された（または削除された）ユーザー：ログアウトさせる
+        $_SESSION = [];
+        session_regenerate_id(true);
+        return null;
+    }
+
+    // 権限・名前・所属拠点の変更も、すぐに反映する
+    $user = [
+        'id'          => (int)$row['id'],
+        'name'        => $row['name'],
+        'role'        => $row['role'],
+        'location_id' => (int)$row['location_id'],
+    ];
+    $_SESSION['user'] = $user;
+    return $user;
 }
 
 /**
