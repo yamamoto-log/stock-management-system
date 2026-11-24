@@ -343,8 +343,11 @@ require __DIR__ . '/../../includes/layout/header.php';
             <tr>
                 <th>商品</th>
                 <th>数量</th>
-                <th>送り元の<br>保管場所</th>
-                <th><?= $isCancelled ? '戻した<br>保管場所' : '送り先の<br>保管場所' ?></th>
+                <th>送り元の保管場所<br>（<?= h($transfer['from_name']) ?>）</th>
+                <th>
+                    <?= $isCancelled ? '戻した保管場所' : '送り先の保管場所' ?><br>
+                    （<?= h($isCancelled ? $transfer['from_name'] : $transfer['to_name']) ?>）
+                </th>
                 <?php if ($isReceived): ?><th>操作</th><?php endif; ?>
             </tr>
             <?php foreach ($lines as $line): ?>
