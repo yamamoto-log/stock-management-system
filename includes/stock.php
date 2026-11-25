@@ -66,7 +66,7 @@ function product_options(PDO $pdo): array
 function stock_options(PDO $pdo, int $locationId): array
 {
     $stmt = $pdo->prepare(
-        "SELECT s.box_id, s.product_id, s.qty, b.loose_location_id
+        "SELECT s.box_id, s.product_id, s.qty, b.loose_location_id, b.note
          FROM stocks s
          JOIN boxes b ON b.id = s.box_id
          WHERE b.location_id = ? AND b.status = 'active'
@@ -77,19 +77,56 @@ function stock_options(PDO $pdo, int $locationId): array
     $products = product_options($pdo);
     $options  = [];
     foreach ($stmt->fetchAll() as $row) {
-        $boxId     = (int)$row['box_id'];
-        $productId = (int)$row['product_id'];
-        $storage   = $row['loose_location_id'] !== null ? '箱なし' : box_code($boxId);
+        $boxId       = (int)$row['box_id'];
+        $productId   = (int)$row['product_id'];
+        $storage     = $row['loose_location_id'] !== null ? '箱なし' : box_code($boxId);
+        $productName = $products[$productId] ?? product_code($productId);
+
+        // 選択肢の見出し（箱なし／BOX-0004（メモの先頭））
+        $group = $storage;
+        if ($row['loose_location_id'] === null && $row['note'] !== null && $row['note'] !== '') {
+            $group .= '（' . mb_strimwidth($row['note'], 0, 30, '…') . '）';
+        }
+
         $options[$boxId . ':' . $productId] = [
             'box_id'     => $boxId,
             'product_id' => $productId,
             'qty'        => (int)$row['qty'],
-            'name'       => $storage . ' / ' . ($products[$productId] ?? product_code($productId)),
-            'label'      => $storage . ' / ' . ($products[$productId] ?? product_code($productId))
-                . '（残 ' . $row['qty'] . '）',
+            'name'       => $storage . ' / ' . $productName,
+            'label'      => $storage . ' / ' . $productName . '（残 ' . $row['qty'] . '）',
+            'group'      => $group,
+            'item_label' => $productName . '（残 ' . $row['qty'] . '）',
         ];
     }
     return $options;
+}
+
+/**
+ * stock_options() の選択肢を、保管場所ごとの見出し（optgroup）つきの <option> にする
+ * $selected：選ばれている選択肢のキー（'箱ID:商品ID'）
+ */
+function stock_option_tags(array $stockOptions, string $selected = ''): string
+{
+    $html         = '';
+    $currentGroup = null;
+
+    foreach ($stockOptions as $key => $option) {
+        // 保管場所が変わったら、見出しを閉じて新しく始める
+        if ($option['group'] !== $currentGroup) {
+            if ($currentGroup !== null) {
+                $html .= '</optgroup>';
+            }
+            $html .= '<optgroup label="' . h($option['group']) . '">';
+            $currentGroup = $option['group'];
+        }
+        $html .= '<option value="' . h((string)$key) . '"'
+            . ((string)$key === $selected ? ' selected' : '') . '>'
+            . h($option['item_label']) . '</option>';
+    }
+    if ($currentGroup !== null) {
+        $html .= '</optgroup>';
+    }
+    return $html;
 }
 
 // ---------------------------------------------------------------
