@@ -203,6 +203,14 @@ textarea { max-width: 600px; }
 /* 行のエラーは、入力欄の下に1行使って表示する */
 .line-row .field-error { flex-basis: 100%; margin: 0; }
 
+/* スマートフォン：入力欄とボタンを指で押しやすい大きさにする */
+@media (max-width: 600px) {
+  input, select, textarea, button, .button {
+    min-height: 44px;
+    font-size: 16px; /* 16px より小さいと、iPhone で入力時に画面が勝手に拡大される */
+  }
+}
+
 
 /* ---------------------------------------------------------------------
    6. ボタン

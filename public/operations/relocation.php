@@ -115,7 +115,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     if ($startProductId > 0 && $startQty > 0 && isset($items[$startProductId])) {
         $qtyInputs[$startProductId] = (string)min($startQty, $items[$startProductId]);
     }
-
 } else {
     verify_csrf();
 
@@ -341,7 +340,7 @@ require __DIR__ . '/../../includes/layout/header.php';
                             <td><?= h($products[$productId] ?? product_code($productId)) ?></td>
                             <td class="num"><?= h((string)$remain) ?></td>
                             <td>
-                                <input type="number" name="qty[<?= h((string)$productId) ?>]" min="1" max="<?= h((string)$remain) ?>"
+                                <input type="number" inputmode="numeric" name="qty[<?= h((string)$productId) ?>]" min="1" max="<?= h((string)$remain) ?>"
                                     value="<?= h($qtyInputs[$productId] ?? (string)$remain) ?>" style="width: 6em;">
                                 <?php if (isset($errors['line'][$productId])): ?>
                                     <p class="field-error"><?= h($errors['line'][$productId]) ?></p>

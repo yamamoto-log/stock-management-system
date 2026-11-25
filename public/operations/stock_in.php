@@ -287,7 +287,7 @@ require __DIR__ . '/../../includes/layout/header.php';
                             <option value="<?= h((string)$id) ?>" <?= (string)$id === $line['box_id'] ? 'selected' : '' ?>><?= h($text) ?></option>
                         <?php endforeach; ?>
                     </select>
-                    <input type="number" name="qty[]" min="1" max="9999" value="<?= h($line['qty']) ?>" placeholder="数量">
+                    <input type="number" inputmode="numeric" name="qty[]" min="1" max="9999" value="<?= h($line['qty']) ?>" placeholder="数量">
                     <button type="button" class="button-secondary remove-line">削除</button>
                     <?php if (isset($errors['line'][$i])): ?>
                         <p class="field-error"><?= h($errors['line'][$i]) ?></p>
@@ -312,7 +312,7 @@ require __DIR__ . '/../../includes/layout/header.php';
                         <option value="<?= h((string)$id) ?>" <?= $id === $looseBoxId ? 'selected' : '' ?>><?= h($text) ?></option>
                     <?php endforeach; ?>
                 </select>
-                <input type="number" name="qty[]" min="1" max="9999" placeholder="数量">
+                <input type="number" inputmode="numeric" name="qty[]" min="1" max="9999" placeholder="数量">
                 <button type="button" class="button-secondary remove-line">削除</button>
             </div>
         </template>

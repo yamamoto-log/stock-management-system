@@ -371,7 +371,7 @@ require __DIR__ . '/../../includes/layout/header.php';
                                 <?= stock_option_tags($stockOptions, $line['stock_key']) ?>
                             </select>
                         <?php endif; ?>
-                        <input type="number" name="qty[]" min="1" <?= $isIncrease ? 'max="9999"' : '' ?>
+                        <input type="number" inputmode="numeric" name="qty[]" min="1" <?= $isIncrease ? 'max="9999"' : '' ?>
                             value="<?= h($line['qty']) ?>" placeholder="数量">
                         <button type="button" class="button-secondary remove-line">削除</button>
                         <?php if (isset($errors['line'][$i])): ?>
@@ -403,7 +403,7 @@ require __DIR__ . '/../../includes/layout/header.php';
                             <?= stock_option_tags($stockOptions) ?>
                         </select>
                     <?php endif; ?>
-                    <input type="number" name="qty[]" min="1" <?= $isIncrease ? 'max="9999"' : '' ?> placeholder="数量">
+                    <input type="number" inputmode="numeric" name="qty[]" min="1" <?= $isIncrease ? 'max="9999"' : '' ?> placeholder="数量">
                     <button type="button" class="button-secondary remove-line">削除</button>
                 </div>
             </template>
