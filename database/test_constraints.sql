@@ -119,6 +119,18 @@ INSERT INTO operation_items (operation_id, product_id, qty, from_box_id, to_box_
 INSERT INTO operation_items (operation_id, product_id, qty, from_box_id, to_box_id)
   VALUES (1, 1, 0, NULL, 1);
 
+-- T20b 期待：成功（取消した移動の明細：移動元があり、移動先がなく、戻した保管場所がある。元の箱に戻した場合）
+INSERT INTO operation_items (operation_id, product_id, qty, from_box_id, to_box_id, returned_box_id)
+  VALUES (2, 1, 1, 2, NULL, 2);
+
+-- T20c 期待：エラー（ck_operation_items_returned：受取済の明細（移動先あり）に戻した保管場所がある）
+INSERT INTO operation_items (operation_id, product_id, qty, from_box_id, to_box_id, returned_box_id)
+  VALUES (2, 1, 1, 2, 1, 2);
+
+-- T20d 期待：エラー（ck_operation_items_returned：移動元がない明細に戻した保管場所がある）
+INSERT INTO operation_items (operation_id, product_id, qty, from_box_id, to_box_id, returned_box_id)
+  VALUES (1, 1, 1, NULL, 1, 2);
+
 -- ---------------------------------------------------------------------
 -- 外部キーの RESTRICT
 -- ---------------------------------------------------------------------
