@@ -1,6 +1,9 @@
 # DB接続設定（本物のパスワードを含む）
 config/database.php
 
+# アカウントログイン
+database/dev_users.sql
+
 # エディタ・OSが作るファイル
 .vscode/
 .idea/

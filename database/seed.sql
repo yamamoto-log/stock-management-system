@@ -45,7 +45,7 @@ INSERT INTO categories (id, name) VALUES
 -- 初期ユーザー
 -- ---------------------------------------------------------------------
 INSERT INTO users (id, login_id, password_hash, name, role, location_id) VALUES
-  (1, 'admin',  '$2y$12$x183T543gAv36wo8AsFA2eZxjEx4Bpz146AK2JLylwG0lN2oivpYS', '管理者', 'admin',  1),
-  (2, 'staff1', '$2y$12$x183T543gAv36wo8AsFA2eZxjEx4Bpz146AK2JLylwG0lN2oivpYS', '奈良店スタッフ', 'normal', 2);
+  (1, 'admin', 'ハッシュ値を貼る', '管理者', 'admin',  1),
+  (2, 'staff1', 'ハッシュ値を貼る', '奈良店スタッフ', 'normal', 2);
 
 COMMIT;
