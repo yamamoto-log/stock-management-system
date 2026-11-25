@@ -12,7 +12,10 @@ $name        = trim($_GET['name'] ?? '');
 $categoryId  = (int)($_GET['category_id'] ?? 0);
 $target      = $_GET['target'] ?? '';
 $season      = $_GET['season'] ?? '';
-$locationId  = isset($_GET['location_id']) ? (int)$_GET['location_id'] : $user['location_id'];
+// URL に拠点の指定がない（メニューから開いた）ときは、管理者はすべて（0）、一般は所属拠点
+$locationId  = isset($_GET['location_id'])
+    ? (int)$_GET['location_id']
+    : ($user['role'] === 'admin' ? 0 : $user['location_id']);
 $onlyEmpty   = isset($_GET['only_empty']);
 $showRetired = isset($_GET['show_retired']);
 

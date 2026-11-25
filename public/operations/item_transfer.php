@@ -294,11 +294,9 @@ require __DIR__ . '/../../includes/layout/header.php';
                     <div class="line-row">
                         <select name="stock_key[]">
                             <option value="">保管場所 / 商品を選択</option>
-                            <?php foreach ($stockOptions as $key => $option): ?>
-                                <option value="<?= h($key) ?>" <?= $key === $line['stock_key'] ? 'selected' : '' ?>><?= h($option['label']) ?></option>
-                            <?php endforeach; ?>
+                            <?= stock_option_tags($stockOptions, $line['stock_key']) ?>
                         </select>
-                        <input type="number" name="qty[]" min="1" value="<?= h($line['qty']) ?>" placeholder="数量">
+                        <input type="number" inputmode="numeric" name="qty[]" min="1" value="<?= h($line['qty']) ?>" placeholder="数量">
                         <button type="button" class="button-secondary remove-line">削除</button>
                         <?php if (isset($errors['line'][$i])): ?>
                             <p class="field-error"><?= h($errors['line'][$i]) ?></p>
@@ -313,11 +311,9 @@ require __DIR__ . '/../../includes/layout/header.php';
                 <div class="line-row">
                     <select name="stock_key[]">
                         <option value="">保管場所 / 商品を選択</option>
-                        <?php foreach ($stockOptions as $key => $option): ?>
-                            <option value="<?= h($key) ?>"><?= h($option['label']) ?></option>
-                        <?php endforeach; ?>
+                        <?= stock_option_tags($stockOptions) ?>
                     </select>
-                    <input type="number" name="qty[]" min="1" placeholder="数量">
+                    <input type="number" inputmode="numeric" name="qty[]" min="1" placeholder="数量">
                     <button type="button" class="button-secondary remove-line">削除</button>
                 </div>
             </template>

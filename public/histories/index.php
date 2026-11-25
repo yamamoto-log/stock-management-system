@@ -19,7 +19,8 @@ $locationNames = array_column(
 );
 
 if (!isset($_GET['location_id'])) {
-    $locationId = $user['location_id'];
+    // 管理者はすべて、一般は所属拠点
+    $locationId = $user['role'] === 'admin' ? null : $user['location_id'];
 } elseif ($_GET['location_id'] === '') {
     $locationId = null;   // すべて
 } else {

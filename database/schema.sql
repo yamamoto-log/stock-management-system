@@ -168,14 +168,17 @@ CREATE TABLE operation_items (
   qty          INT          NOT NULL,
   from_box_id  INT UNSIGNED NULL DEFAULT NULL,
   to_box_id    INT UNSIGNED NULL DEFAULT NULL,
+  returned_box_id INT UNSIGNED NULL DEFAULT NULL,  -- 商品移動の取消で戻した保管場所
   PRIMARY KEY (id),
   CONSTRAINT fk_operation_items_operation_id FOREIGN KEY (operation_id) REFERENCES operations(id) ON DELETE RESTRICT,
   CONSTRAINT fk_operation_items_product_id   FOREIGN KEY (product_id)   REFERENCES products(id)   ON DELETE RESTRICT,
   CONSTRAINT fk_operation_items_from_box_id  FOREIGN KEY (from_box_id)  REFERENCES boxes(id)      ON DELETE RESTRICT,
   CONSTRAINT fk_operation_items_to_box_id    FOREIGN KEY (to_box_id)    REFERENCES boxes(id)      ON DELETE RESTRICT,
+  CONSTRAINT fk_operation_items_returned_box_id FOREIGN KEY (returned_box_id) REFERENCES boxes(id) ON DELETE RESTRICT,
   CONSTRAINT ck_operation_items_qty      CHECK (qty > 0),
   CONSTRAINT ck_operation_items_box      CHECK (from_box_id IS NOT NULL OR to_box_id IS NOT NULL),
-  CONSTRAINT ck_operation_items_diff_box CHECK (from_box_id IS NULL OR to_box_id IS NULL OR from_box_id <> to_box_id)
+  CONSTRAINT ck_operation_items_diff_box CHECK (from_box_id IS NULL OR to_box_id IS NULL OR from_box_id <> to_box_id),
+  CONSTRAINT ck_operation_items_returned CHECK (returned_box_id IS NULL OR (from_box_id IS NOT NULL AND to_box_id IS NULL))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
