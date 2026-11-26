@@ -42,11 +42,20 @@ function getDb(): PDO
         );
     }
 
-    $pdo = new PDO($dsn, $config['user'], $config['password'], [
+    $options = [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION, // エラー時に例外を投げる
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,       // 結果を連想配列で受け取る
         PDO::ATTR_EMULATE_PREPARES   => false,                  // 本物のプリペアドステートメントを使う
-    ]);
+    ];
+
+    // 本番（DB がインターネットの向こうにある）では、通信を暗号化する
+    // DB_SSL_CA：サーバーの証明書を確かめるための、認証局の証明書のファイル
+    if (getenv('DB_SSL_CA') !== false) {
+        $options[PDO::MYSQL_ATTR_SSL_CA] = getenv('DB_SSL_CA');
+    }
+
+    $pdo = new PDO($dsn, $config['user'], $config['password'], $options);
+    
     $pdo->exec("SET time_zone = '+09:00'");
 
     return $pdo;
