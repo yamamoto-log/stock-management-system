@@ -9,7 +9,20 @@ function getDb(): PDO
         return $pdo;
     }
 
-    $config = require __DIR__ . '/../config/database.php';
+    // 環境変数 DB_HOST があれば（本番）環境変数から、なければ（開発）config/database.php から読む
+    if (getenv('DB_HOST') !== false) {
+        $config = [
+            'host'     => getenv('DB_HOST'),
+            'port'     => getenv('DB_PORT') ?: '3306',
+            'socket'   => '',
+            'dbname'   => getenv('DB_NAME'),
+            'user'     => getenv('DB_USER'),
+            'password' => getenv('DB_PASSWORD'),
+            'charset'  => 'utf8mb4',
+        ];
+    } else {
+        $config = require __DIR__ . '/../config/database.php';
+    }
 
     // ソケットの指定があればソケットで、なければホスト名で接続する
     if (!empty($config['socket'])) {
@@ -21,8 +34,9 @@ function getDb(): PDO
         );
     } else {
         $dsn = sprintf(
-            'mysql:host=%s;dbname=%s;charset=%s',
+            'mysql:host=%s;port=%s;dbname=%s;charset=%s',
             $config['host'],
+            $config['port'] ?? '3306',   // 開発の設定に port がなければ 3306
             $config['dbname'],
             $config['charset']
         );
