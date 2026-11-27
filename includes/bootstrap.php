@@ -26,7 +26,11 @@ date_default_timezone_set($appConfig['timezone']);
 
 
 // セッションの Cookie の設定（session_start() より前に行う）
-$isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+// HTTPS で開かれているか
+// Render などの中継（プロキシ）の後ろでは、元が HTTPS かどうかを X-Forwarded-Proto で判断する
+// ただし、このヘッダーは誰でも付けられるので、中継の後ろで動かすとき（TRUST_PROXY=true）だけ信じる
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (getenv('TRUST_PROXY') === 'true' && ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
 
 session_set_cookie_params([
     'lifetime' => 0,          // ブラウザを閉じたら Cookie を消す
