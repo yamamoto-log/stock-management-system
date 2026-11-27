@@ -1,0 +1,5 @@
+.git
+config/database.php
+database/dev_users.sql
+notes/
+database/
