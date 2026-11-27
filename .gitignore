@@ -3,6 +3,7 @@ config/database.php
 
 # アカウントログイン
 database/dev_users.sql
+database/prod_users.sql
 
 # エディタ・OSが作るファイル
 .vscode/
