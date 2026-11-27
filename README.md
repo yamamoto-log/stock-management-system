@@ -2,7 +2,7 @@
 
 > 着物レンタル店の商品が「どの拠点の、どの箱に、何個あるか」を、箱を開けずに確認できる在庫管理Webアプリ
 
-> **デモ:** https://kimono-stock.onrender.com（最初の表示に1分ほどかかることがあります／[ログイン用のアカウント](#デモ)）
+> **デモ:** [https://kimono-stock.onrender.com](https://kimono-stock.onrender.com)（最初の表示に1分ほどかかることがあります／[ログイン用のアカウント](#デモ)）
 >
 > **技術:** HTML, CSS, JavaScript, PHP 8.3, MariaDB 10.11（フレームワーク不使用）, Docker, Render
 
@@ -16,7 +16,7 @@
 
 ## デモ
 
-**https://kimono-stock.onrender.com**
+**[https://kimono-stock.onrender.com](https://kimono-stock.onrender.com)**
 
 | アカウント | ログインID | パスワード | できること |
 | --- | --- | --- | --- |
