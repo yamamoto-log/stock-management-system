@@ -2,6 +2,63 @@
 
 ## 2026年10月
 ---
+### 2026/11/27
+* 公開（Issue 16）
+
+* やったこと
+  - 本番の DB を選び、test_constraints.sql で制約が効くことを確かめた
+  - DB の接続情報と debug を、環境変数から読めるようにした
+  - Dockerfile を書き、Render で公開した（Frankfurt、Free）
+  - 本番の DB との通信を TLS で暗号化した
+  - 本番のパスワードを開発用と分け、デモ用の管理者（demo_admin）を作った
+  - 公開の手順書（docs/07_deploy.md）を書いた
+
+* 構成を決めるまで
+  - 最初はレンタルサーバーを考えたが、Docker と自動デプロイを経験するため、GitHub ＋ Render ＋ 外部の DB にした
+  - DB は test_constraints.sql を流して選んだ
+    - TiDB Cloud Starter：CHECK 制約が効かず不採用
+    - Aiven for MySQL：無料枠の新規作成が終わっていた（すすめている記事が古かった）
+    - Filess.io（MariaDB 10.11）：すべて期待どおり。ENUM の T00b がエラーになったので、strict モードも有効と分かった
+  - 作ってきたテストが、本番の DB を選ぶ根拠になった
+
+* 設定の分け方
+  - 本番の秘密の情報は、コードにもファイルにも書かず、Render の環境変数で渡す
+  - 環境変数 DB_HOST があれば本番、なければ開発（config/database.php）として読む
+  - debug は、指定がなければ false。本番で設定し忘れても、エラーの詳細が出ない（安全なほうを初期値にする）
+
+* 暗号化
+  - アプリと DB が別の会社のサーバーで、インターネット越しにつながるので、暗号化が必須
+  - Filess.io は暗号化なしの接続も受け付けた（DB の側では強制できない）
+  - そのため、アプリの側で、本番では必ず証明書を指定して接続するようにした。DB_SSL_CA を入れ忘れても、標準の証明書で暗号化される
+  - 証明書で、接続先が本物かどうかも確かめている
+
+* HTTPS と Cookie
+  - Render では、コンテナの Apache には HTTP で届くので、そのままでは Cookie に Secure が付かない
+  - X-Forwarded-Proto ヘッダーで元が HTTPS か判断した。ヘッダーは誰でも付けられるので、TRUST_PROXY=true のときだけ信じる
+  - Issue 14 から持ち越していた Secure の確認ができた
+
+* Docker で学んだこと
+  - Dockerfile：公式の php:8.3-apache を土台に、pdo_mysql を入れ、公開フォルダを public/、ポートを Render の PORT にした
+  - .dockerignore：パスワードの入ったファイルや、アプリが使わない database/ を箱に入れない
+  - イメージは build した時点のファイルの写し。コードを直したら build し直さないと反映されない
+  - 手元で同じ箱を動かして確かめてから Render に置いたので、本番で起きる問題を先に見つけられた
+
+* つまずいたこと
+  - `read -s` の後にコマンドをまとめて貼り、次の行がパスワードとして読まれた（using password: NO）
+  - `read -s` は `\` を消すので、`read -rs` を使う
+  - `sudo` は環境変数を引き継がないので、`sudo -E docker run` にする
+  - `--rm` を `--rum` と打ち間違え、コンテナが起動していなかった
+  - db.php を直した後に build し直さず、コンテナの中では暗号化されていなかった。確かめたので、公開前に気づけた
+  - Render で同じサービスを2つ作ってしまった。無料の時間を分け合うので、1つにした
+  - Render の「Add a new environment」（環境のまとまり）と「Environment Variables」（環境変数）を取り違えた
+  - Render の DB_PASSWORD が届かず、ログイン時に 500 エラー。画面には詳細が出ないので、Render のログで原因を確かめた
+
+* 次にやること
+  - README に、デモの URL・アカウント・GIF を載せる
+  - 公開後の改善（README の「今後の改善」）
+  - Laravel への移行
+
+---
 ### 2026/11/25
 * 動作確認・テスト（Issue 15）
 
